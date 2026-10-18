@@ -1,0 +1,6 @@
+{
+  "name": "Substance",
+  "description": "Personal Substance Intake Tracker, Multi-Dose Pharmacokinetic Superposition Modeling Engine, and Bio-Analytics Bento Cockpit.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

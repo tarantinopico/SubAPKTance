@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">Substance</string>
+    <string name="nav_dashboard">Cockpit</string>
+    <string name="nav_log_dose">Log Dose</string>
+    <string name="nav_analytics">Analytics</string>
+    <string name="nav_substances">Substances</string>
+    <string name="nav_settings">Control</string>
+    <string name="tier_negligible">Negligible</string>
+    <string name="tier_light">Light</string>
+    <string name="tier_medium">Medium</string>
+    <string name="tier_strong">Strong</string>
+    <string name="tier_dangerous">Dangerous</string>
+</resources>

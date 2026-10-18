@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Outer Molecular Hexagon Ring -->
+    <path
+        android:fillColor="#2606B6D4"
+        android:strokeColor="#06B6D4"
+        android:strokeWidth="3.2"
+        android:pathData="M54,22 L81.7,38 L81.7,70 L54,86 L26.3,70 L26.3,38 Z" />
+    <!-- Inner Glowing Bio-Ring -->
+    <path
+        android:fillColor="#1A10B981"
+        android:strokeColor="#10B981"
+        android:strokeWidth="2.0"
+        android:pathData="M54,31 L73.9,42.5 L73.9,65.5 L54,77 L34.1,65.5 L34.1,42.5 Z" />
+    <!-- Pharmacokinetic Superposition Pulse Curve -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#38BDF8"
+        android:strokeWidth="4.2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M29,60 C35,60 39,58 43,47 C47,36 50,33 54,33 C58,33 61,44 65,49 C69,54 73,58 79,59" />
+    <!-- Peak Node Orbs -->
+    <path
+        android:fillColor="#F59E0B"
+        android:pathData="M54,33 m-4.5,0 a4.5,4.5 0 1,0 9,0 a4.5,4.5 0 1,0 -9,0" />
+    <path
+        android:fillColor="#06B6D4"
+        android:pathData="M43,47 m-3,0 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0" />
+    <path
+        android:fillColor="#10B981"
+        android:pathData="M65,49 m-3,0 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0" />
+</vector>
