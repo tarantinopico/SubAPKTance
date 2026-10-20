@@ -1,204 +1,87 @@
-# Substance — Profesionální Bio-Analytická & Farmakokinetická Platforma (Finální Specifikace)
+# Optimalizace prostoru, velikosti prvků a odstranění hluchých mezer v kartách
 
-Kompletní rozšíření a finální vylepšení aplikace **Substance** na čistý, profesionální analytický nástroj s podporou poddruhů (variant) látek, interaktivním zkoumáním konkrétních bodů v grafech (včetně zobrazení Min, Max, Průměru, Mediánu a směrodatných odchylek), víceúrovňovými analytickými podstránkami pro korelace a rozestupy, volitelnou dobou účinku vs. dobou setrvání v těle, plně upravitelnými výpočetními koeficienty, plnohodnotným **Light Mode** a **Lightweight režimem** (vypnutí efektů) a automatickou kompilací přes **GitHub Actions workflow**.
+Cílem této úpravy je odstranit prázdné černé mezery uvnitř karet na **Přehledu (Dashboard)**, na stránce **Přidat (Nový záznam)** i v **Analytice a Katalogu látek**, opravit přetékání štítků v hlavní kartě aktivních látek a zvětšit grafy, tlačítka, posuvníky i písmo tak, aby každá karta využívala svůj prostor naplno a byla perfektně čitelná.
 
----
-
-## User Review & Critical Decisions
+### User Review & Critical Decisions
 
 > [!IMPORTANT]
-> Níže jsou potvrzená rozhodnutí z úvodního dotazníku a klíčové architektonické volby před samotnou implementací.
+> Níže jsou potvrzená rozhodnutí z vašich odpovědí, podle kterých bude upraveno rozvržení a velikost prvků:
 
-- **Potvrzené rozhodnutí 1 — Poddruhy (Subtypy / Varianty) látek**: Každá látka může mít libovolný počet poddruhů (např. *Kofein → Espresso, V60 Filtr, Matcha, Energy Drink*; *Kratom → Green Maeng Da, White Borneo, Red Bali, Extrakt*). Každý poddruh má vlastní název, barvu/odstín, modifikátor síly/potence (např. `1.25×`), vlastní cenu za jednotku a volitelnou úpravu rychlosti nástupu. V analytice jsou samostatné grafy porovnávající poddruhy mezi sebou.
-- **Potvrzené rozhodnutí 2 — Hlavní doba účinku vs. volitelná doba v těle**: Doba trvání účinků (`Active Effect Duration`) a doba setrvání látky v těle (`Body Elimination / Presence Duration`) jsou dvě oddělené hodnoty. Hlavní metrikou na Dashboardu i v grafech je **doba účinku**. Časové parametry nejsou povinné (lze zapnout zjednodušený režim pouze s celkovou dobou účinku, nebo časování u dané látky zcela vypnout).
-- **Potvrzené rozhodnutí 3 — 5 podstránek v Analytice (Globálně i Per-Substance)**: Analytické centrum obsahuje v obou režimech (**Celkový přehled** i **Detail konkrétní látky**) 5 přehledných podstránek:
-  1. **Přehled & Spotřeba** (denní/týdenní/měsíční trendy, finance, kumulativní vývoj)
-  2. **Druhy & Varianty** (srovnání poddruhů látky, podíl spotřeby, cena a účinek podle druhu, cesty podání)
-  3. **Korelace & Závislosti** (korelace velikosti dávky na rozestupu od minulé dávky, korelace mezi různými látkami v témže dni, vliv denní doby prvního užití na celkovou denní spotřebu, korelace s vlastním hodnocením/poznámkami)
-  4. **Rozestupy & Frekvence** (distribuce rozestupů mezi dávkami, vývoj zkracování/prodlužování rozestupů v čase, kompulzivní redosing index, cirkadiánní hodiny, dny v týdnu, abstinence)
-  5. **Farmakokinetika & Tolerance** (aktivní křivky účinku vs. hladina v těle, multi-dose stacking amplifikace, index tolerance a saturace receptorů, spánková hygiena)
-- **Potvrzené rozhodnutí 4 — Profesionální vzhled (Dark + Light Mode) & Lightweight přepínač**: Design je přepracován z futuristického stylu na čistý, precizní, vysoce profesionální analytický vzhled (inspirovaný špičkovými zdravotními a finančními analytickými nástroji). Podporuje **Dark Mode**, **Light Mode** a **Lightweight Mode** (1-tap vypnutí všech glow efektů, animací, průhledností a stínů pro maximální plynulost a čistotu).
+- **Potvrzená volba 1 (Přehled / Dashboard):** Zvětšit grafy, písmo, ukazatele a položky v kartách tak, aby beze zbytku vyplnily celou plochu karet bez prázdných mezer.
+- **Potvrzená volba 2 (Stránka Přidat / Nový záznam):** Výrazně zvětšit tlačítka dávkování (`-5x`, `-`, `+`, `+5x`), posuvník prahových zón, předvolby dávek i přepínače času a kontextu a odstranit hluchá místa mezi řádky.
+- **Potvrzená volba 3 (Sjednocení v celé aplikaci):** Stejný princip plného využití plochy karet a větší čitelnosti prvků sjednotit i v Analytice a Katalogu látek.
 
 ---
 
-## 1. Overview & Core Concept
+### 1. Overview & Core Concept
 
-- **Co aplikace dělá**: Slouží k přesnému zaznamenávání příjmu látek a doplňků (včetně konkrétního poddruhu/varianty), výpočtu aktivního účinku i zbytkové přítomnosti v těle a hloubkové statistické a korelační analýze.
-- **Hlavní přidaná hodnota nové verze**:
-  - **Maximální informační hodnota grafů**: Každý graf automaticky vykresluje a vypisuje **Minimum, Maximum, Průměr (Mean), Medián a P90 / Trend**, umožňuje **kliknutím/posouváním prstu (Point Inspector) zobrazit přesnou hodnotu, datum a detail konkrétního bodu** na křivce či sloupci.
-  - **Otevřený matematický engine**: Žádná konstanta není schovaná „natvrdo“ v kódu — jak globální algoritmické parametry (rychlost růstu a poklesu tolerance, váha superpozice, prahy pro spánek, rozlišení křivek), tak parametry jednotlivých látek a jejich poddruhů lze upravit v přehledně strukturovaných podstránkách.
-
----
-
-## 2. User Experience & Visual Design
-
-### Vizuální identita: Čistý Profesionální Design (Dark Mode, Light Mode & Lightweight Mode)
-- **Estetický směr**: Čistý, klinicky přesný a přehledný profesionální design s vysokým kontrastem typografie, jasnou hierarchií dat a nulovým vizuálním šumem.
-- **Barevná schémata**:
-  - **Professional Dark (`--background: #0B0F17`, `--surface: #131B2E`, `--border: #23304A`)**: Neutrální břidlicové pozadí šetrné k očím s ostrými datovými křivkami.
-  - **Professional Light (`--background: #F8FAFC`, `--surface: #FFFFFF`, `--border: #E2E8F0`, `--text-primary: #0F172A`)**: Světlý kancelářský/klinický režim s vysokou čitelností na přímém světle.
-  - **Lightweight Mode (Úsporný / Rychlý režim)**: Okamžitě vypne veškeré poloprůhledné vrstvy, barevné aury pozadí, pulzující animace a přechody — nahradí je pevnými, okamžitě vykreslovanými kartami s nulovou zátěží GPU.
-- **Typografie & Čitelnost**:
-  - Nadpisy a popisky: *Space Grotesk* s čistými proporcemi.
-  - Číselné hodnoty, osy grafů, statistické ukazatele (Min / Avg / Max) a odpočty: *Roboto Mono* (tabulkové zarovnání číslic).
-
-### Interaktivní Grafy s Point Inspectorem a Statistikami
-Každá analytická karta s grafem obsahuje:
-1. **Statistickou lištu nad grafem**: Okamžitý přehled `MIN`, `AVG (Průměr)`, `MED (Medián)`, `MAX` a celkového součtu nebo směru trendu (`% změna`).
-2. **Vykreslené referenční hladiny přímo v plátně grafu**: Čárkovaná linie průměru (`AVG`), vyznačený bod globálního maxima (`MAX ▲`) a minima (`MIN ▼`), případně bezpečný denní limit.
-3. **Dotykový Inspektor Bodu (Interactive Touch Scrubber)**: Kliknutím nebo tažením prstu po libovolném grafu se zobrazí svislý zaměřovač (crosshair) a informační bublina s přesnými daty daného bodu (datum/čas, přesná hodnota v jednotkách, odchylka od průměru, poddruh látky a zúčastněné dávky).
+- **Co úprava řeší:**
+  1. **Oprava zúženého grafu na Dashboardu:** V hlavní kartě aktivních látek docházelo při více aktivních látkách k vertikálnímu zalomení posledního štítku (*Všechny aktivní*), což roztáhlo horní lištu přes polovinu karty a zmáčklo farmakokinetickou křivku do úzkého pruhu. Přidáním vodorovného posouvání lišty štítků se křivka okamžitě roztáhne na plnou výšku karty.
+  2. **Konec hluchých mezer (`SpaceBetween`) uvnitř karet:** Karty s pevnou výškou dosud odsouvaly malé prvky k hornímu a dolnímu okraji a uprostřed nechávaly prázdné černé plochy. Místo prázdného místa se samotné položky, grafy, tlačítka a ukazatele proporcionálně roztáhnou a zvětší.
+  3. **Ergonomické ovládání na stránce Přidat:** Přepínače látek, poddruhů, krokovací tlačítka, posuvník prahových zón, časové pilulky (`Teď`, `-10m`, `-30m`…) i hlavní tlačítko `+ Zaznamenat užití` budou výrazně větší a vyplní karty bez zbytečných mezer.
 
 ---
 
-## 3. Key Product Decisions & Trade-Offs
+### 2. User Experience & Visual Design
 
-- **Rozhodnutí 1: Oddělení Doby účinku (`Active Effect`) od Doby v těle (`Body Presence`) + Nepovinné časování**
-  - *Zvolený přístup*: U každé látky lze zvolit režim časování:
-    1. **Vypnuto (Bez časového modelování)** — sleduje se pouze množství, cena, rozestupy a statistiky.
-    2. **Zjednodušený režim** — zadává se pouze **Hlavní doba účinku** (např. 4 hodiny) a volitelně **Celková doba v těle** (např. 12 hodin), náběh a dojezd se dopočítají automaticky podle globálních poměrů.
-    3. **Detailní farmakokinetický režim** — samostatné nastavení Onset, Come-up, Peak, Offset + nezávislá doba eliminace z těla (`Body Presence Hours` / `Half-Life`).
-  - *Proč*: Uživatel nemusí znát přesnou farmakokinetiku u každého doplňku, ale u hlavních látek má plnou kontrolu nad tím, jak dlouho látka reálně účinkuje vs. jak dlouho zůstává v organismu.
-
-- **Rozhodnutí 2: Rozdělení Editoru látky a Nastavení do přehledných podstránek (Sub-tabs)**
-  - *Zvolený přístup*:
-    - **Editor látky (Substance Studio)** je rozdělen do 5 čistých karet/podstránek:
-      1. *Základní info & Vzhled* (název, kategorie, jednotka, krok `+/-`, výchozí dávka, rychlé předvolby, cena a kalkulačka balení)
-      2. *Druhy / Poddruhy látky* (správa variant dané látky — název druhu, modifikátor síly v %, vlastní cena za jednotku, modifikátor nástupu)
-      3. *Hranice dávek (Thresholds)* (5 úrovní intenzity, bezpečný denní limit, doporučený minimální rozestup)
-      4. *Doba účinku & Doba v těle* (přepínač povinnosti časování, hlavní doba účinku, volitelná doba v těle, detailní fáze, chování při vrstvení dávek)
-      5. *Vlastní pole & Výpočetní koeficienty látky* (vlastní sledované parametry + citlivost tolerance a váha bio-zátěže pro tuto látku)
-    - **Nastavení (Control Center)** je rozděleno do 5 samostatných podstránek:
-      1. *Vzhled & Výkon* (Light / Dark Mode, Lightweight Mode — vypnutí efektů, animací a průhlednosti, hustota zobrazení)
-      2. *Výpočetní Engine & Konstanty* (globální parametry všech výpočtů: koeficient akumulace tolerance, rychlost regenerace receptorů za čistý den, váha překryvu při stackingu, výchozí poměry fází účinku, spánková hodina, délka časových oken)
-      3. *Jednotky, Měna & Cesty podání (RoA)* (měna, zaokrouhlování, vlastní jednotky, kontextové štítky, cesty podání a jejich násobitele)
-      4. *Historie záznamů (Log CRUD Manager)* (vyhledávání, filtrace podle látky i poddruhu, hromadné i jednotlivé úpravy, duplikace a mazání)
-      5. *Data, Zálohy & Demo* (JSON/CSV export a import, nahrání či vymazání demo dat)
-
-- **Rozhodnutí 3: Hloubková korelační a intervalová analytika**
-  - *Zvolený přístup*: Přidání specializovaných matematických výpočtů (Pearsonův korelační koeficient $r$, lineární regresní přímka v bodových grafech, matice závislostí) pro zkoumání:
-    - **Závislosti velikosti dávky na rozestupu od předchozí dávky** (např. zda kratší rozestup vede k vyšším či nižším dávkám, včetně regresní přímky).
-    - **Korelace dávek mezi různými látkami** (zda vyšší příjem látky A v daný den koreluje s vyšším/nižším příjmem látky B).
-    - **Vývoje rozestupů v čase** (zda se průměrný rozestup mezi dávkami v posledních týdnech zkracuje nebo prodlužuje).
+- **Přehled (Dashboard):**
+  - **Horní Bio-Cockpit karta:** Větší kruhový indikátor (52 dp) a vyšší, plně vyplněné statistické boxy (*SPEND*, *DOSES*, *STATUS*) s větším písmem (`12.5 sp` hodnoty, `9.5 sp` popisky).
+  - **Hlavní karta aktivních látek (Hero PK Monitor):** Vodorovně posuvná lišta aktivních látek s většími pilulkami (`12 sp`, ikony `14 dp`) bez zalamování; farmakokinetická křivka zabírá celý střed karty; spodní 4fázová lišta (*Užití — Nástup — Vrchol — Konec*) má větší štítek fáze, silnější 8dp progres bar a čitelnější odpočet (`11.5 sp`).
+  - **Střední dvojice karet (`TIME SINCE LAST` a `TODAY UNITS / COST`):** Tři řádky položek v každé kartě se rovnoměrně rozdělí přes celou výšku karty pomocí vnitřních podkaret s většími ikonami (`28 dp`), větším písmem (`12.5 sp` název, `11.5 sp` hodnota) a silnějšími `6 dp` indikačními lištami — žádné prázdné místo pod nadpisem.
+  - **Spodní karta (`24H CIRCADIAN TIMELINE` & Rychlé dávky):** Dvojnásobná výška 24h časové osy (`26 dp`) s popisky hodin (`00h`, `06h`, `12h`, `18h`, `24h`) a většími body dávek; výrazně vyšší tlačítka rychlého zápisu (`38 dp` výška, `11.5 sp` písmo).
+- **Stránka Přidat (Nový záznam):**
+  - **Karta 1 (Látka & Poddruh):** Upravený poměr výšky (`0.15f`) a výrazně větší pilulky látek i poddruhů (`7 dp` vertikální padding, `12 sp` text, `15 dp` ikony) těsně a přehledně pod sebou bez prázdného pruhu uprostřed.
+  - **Karta 2 (Dávkování):** Větší krokovací tlačítka (`46 dp` pro `-5x`/`+5x` a `56 dp` pro `-`/`+`), dominantní středová hodnota dávky (`42 sp`), vyšší 5zónový prahový posuvník (`28 dp` s čitelnými popisky zón `10 sp`) a vysoká tlačítka předvoleb dávek (`40 mg`, `80 mg`… s výškou `34 dp` a písmem `11.5 sp`).
+  - **Karta 3 (Simulace PK křivky & Fáze):** Větší prostor pro živou křivku (`0.22f` výšky obrazovky) a větší popisky fází (`10.5 sp`).
+  - **Karta 4 (Kontext, Čas a Uložení):** Vyšší pilulky kontextu a vlastních polí, větší časové přepínače (`Teď`, `-10m`, `-30m`, `-1h`, `-2h`, `-4h`) a plné `48 dp` vysoké indigové tlačítko `+ Zaznamenat užití`.
+- **Analytika & Katalog látek:**
+  - Vyšší KPI karty a statistické lišty (`MIN | PRŮMĚR | MEDIÁN | P90 | MAX`) s větším monospace písmem (`11 sp`) a kompaktnějšími vnějšími okraji.
 
 ---
 
-## 4. Technical Architecture & Data Strategy
+### 3. Key Product Decisions & Trade-Offs
 
-### Architektura & Hierarchie Modulů
+- **Rozhodnutí 1: Vnitřní vyplnění karet pomocí proporcionální výšky (`weight(1f)`) místo prázdných mezer (`SpaceBetween`)**
+  - *Zvolený přístup:* Uvnitř všech Bento karet nahradíme volné rozestupy `Arrangement.SpaceBetween` proporcionálním rozložením řádků a grafů (`Modifier.weight(1f)` + `fillMaxHeight()`), takže samotné prvky (řádky látek, tlačítka, posuvníky a grafy) se zvětší a vyplní plochu karty.
+  - *Proč:* Zachovává přehlednost celé obrazovky bez nutnosti neustálého skrolování, ale eliminuje hluchá černá místa.
+- **Rozhodnutí 2: Horizontálně posuvná lišta aktivních látek v Hero kartě**
+  - *Zvolený přístup:* Lišta aktivních látek v horní části Hero PK karty bude vodorovně posuvná (`horizontalScroll`) s pevnou výškou jednoho řádku.
+  - *Proč:* Zabraňuje vertikálnímu zalamování textu při 4 a více aktivních látkách a garantuje maximální výšku pro samotný graf.
+
+---
+
+### 4. Technical Architecture & Data Strategy *(Technical Reference)*
+
+#### Architecture & Component Diagram
 
 ```
-┌────────────────────────────────────────────────────────────────────────────┐
-│                   SUBSTANCE APPLICATION (Dark / Light / Lightweight)       │
-├──────────────┬──────────────┬────────────────────┬────────────┬────────────┤
-│  1. Cockpit  │ 2. Log Dose  │  3. Analytics Hub  │ 4. Studio  │ 5. Control │
-│  Dashboard   │    Studio    │ (Global & Per-Sub) │ (Sub CRUD) │  Settings  │
-└──────┬───────┴──────┬───────┴─────────┬──────────┴─────┬──────┴─────┬──────┘
-       │              │                 │                │            │
-       ▼              ▼                 ▼                ▼            ▼
-┌────────────────────────────────────────────────────────────────────────────┐
-│                 5-SUBPAGE ANALYTICS & INTERACTIVE CHART ENGINE             │
-│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────┐ ┌──────┐  │
-│  │ A. Přehled & │ │ B. Druhy &   │ │ C. Korelace  │ │D.Rozestup│ │E. PK │  │
-│  │   Spotřeba   │ │   Varianty   │ │ & Závislosti │ │&Frekvence│ │& Tělo│  │
-│  └──────────────┘ └──────────────┘ └──────────────┘ └──────────┘ └──────┘  │
-│  • Point Inspector (Tap/Drag Crosshair) • Min / Avg / Med / P90 / Max Bar  │
-└───────────────────────────────────────┬────────────────────────────────────┘
-                                        │
-                                        ▼
-┌────────────────────────────────────────────────────────────────────────────┐
-│            CONFIGURABLE COMPUTATIONAL & PHARMACOKINETIC ENGINE             │
-│  • Dual-Timeline Curve Solver: Active Effect Duration vs. Body Presence    │
-│  • Subtype Potency & Cost Multiplier • Pearson Correlation & Linear Reg.   │
-│  • User-Tunable Global & Per-Substance Mathematical Constants              │
-└───────────────────────────────────────┬────────────────────────────────────┘
-                                        │
-                                        ▼
-┌────────────────────────────────────────────────────────────────────────────┐
-│             ROOM SQLITE DATABASE + DATASTORE PREFERENCES + CI              │
-│  • Substances + SubstanceSubtypes + IntakeLogs + CustomFields + RoA        │
-│  • GitHub Actions Workflow (.github/workflows/android.yml -> APK artifact) │
-└────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    Full-Viewport Adaptive Bento Layout                  │
+├───────────────────────────────────┬─────────────────────────────────────┤
+│        Přehled (Dashboard)        │        Přidat (LogDoseScreen)       │
+├───────────────────────────────────┼─────────────────────────────────────┤
+│ ┌───────────────────────────────┐ │ ┌─────────────────────────────────┐ │
+│ │ Bio-Cockpit (Weight 0.12f)    │ │ │ Látka & Poddruh (Weight 0.15f)  │ │
+│ │ 52dp Ring + 3 Full-Height KPI │ │ │ 2x Large Scrollable Pill Rows   │ │
+│ └───────────────────────────────┘ │ └─────────────────────────────────┘ │
+│ ┌───────────────────────────────┐ │ ┌─────────────────────────────────┐ │
+│ │ Hero PK Monitor (Weight 0.40f)│ │ │ Dávkování & Zóny (Weight 0.37f) │ │
+│ │ 1-Line Scroll Pills           │ │ │ 56dp Steppers + 42sp Readout    │ │
+│ │ Full-Bleed PK Canvas (weight) │ │ │ 28dp Threshold Bar + 34dp Chips │ │
+│ │ 4-Phase Strip (8dp bar)       │ │ └─────────────────────────────────┘ │
+│ └───────────────────────────────┘ │ ┌─────────────────────────────────┐ │
+│ ┌──────────────┐ ┌──────────────┐ │ │ PK Simulace (Weight 0.22f)      │ │
+│ │ Od poslední  │ │ Dnes užito   │ │ │ Full-Height Curve + 4-Phase Row │ │
+│ │ 3x Weighted  │ │ 3x Weighted  │ │ └─────────────────────────────────┘ │
+│ │ Item Cards   │ │ Progress Rows│ │ ┌─────────────────────────────────┐ │
+│ └──────────────┘ └──────────────┘ │ │ Kontext, Čas & CTA (Weight 0.26f│ │
+│ ┌───────────────────────────────┐ │ │ Tall Context & Time Pills       │ │
+│ │ 24h Osa (26dp) + 38dp Dock    │ │ │ 48dp Solid Indigo Commit Button │ │
+│ └───────────────────────────────┘ │ └─────────────────────────────────┘ │
+└───────────────────────────────────┴─────────────────────────────────────┘
 ```
 
-### Datový Model & Rozšíření Schématu
-1. **Látka (`SubstanceEntity`)**:
-   - Rozšířeno o nastavení časování: `isTimingEnabled` (Boolean — zda vůbec počítat křivky), `useSimpleTiming` (Boolean — zda zadávat jen hlavní dobu účinku), `mainEffectDurationMinutes` (Hlavní doba účinku), `bodyPresenceHours` (Volitelná celková doba setrvání v těle, nezávislá na době účinku), plus individuální koeficienty pro výpočet tolerance (`toleranceBuildRate`, `toleranceDecayRate`) a bio-zátěže (`bioLoadWeight`).
-2. **Poddruh / Varianta látky (`SubstanceSubtypeEntity`)**:
-   - Vazba na `substanceId`, `name` (např. *Double Espresso*, *Green Maeng Da*), `colorHex`, `potencyMultiplier` (síla účinku oproti základu, např. `1.20`), `onsetMultiplier` (rychlost nástupu), `durationMultiplier` (délka účinku), `customCostPerUnit` (volitelná specifická cena za jednotku tohoto druhu) a `notes`.
-3. **Záznam užití (`IntakeLogEntity`)**:
-   - Uchovává `subtypeId` a `subtypeName`, aplikovaný `potencyMultiplier`, vyhodnocenou efektivní dávku (`effectiveDoseAmount = doseAmount * bioavailability * potencyMultiplier`), skutečnou dobu účinku a dobu eliminace z těla.
-4. **Globální výpočetní konstanty (`UserSettings`)**:
-   - Všechny matematické parametry jsou plně editovatelné v Nastavení:
-     - Výchozí poměry fází při jednoduchém zadání doby účinku (Onset %, Come-up %, Peak %, Offset %).
-     - Koeficient růstu tolerance (`globalToleranceGainFactor`) a denní rychlost poklesu tolerance (`globalToleranceDecayPerDay`).
-     - Prahy pro kompulzivní redosing (`compulsiveRedoseThresholdHours`) a váhy pro výpočet celkového Safety Skóre.
-     - Přepínače vzhledu: `isLightMode` (Světlý / Tmavý režim), `isLightweightMode` (vypnutí efektů, glow a animací), `showChartMinMaxAvgLines` (vykreslování Min/Max/Avg přímek v grafech).
-
-### Přehled všech Grafů a Vizualizací v 5 Podstránkách Analytiky
-
-#### Režim 1: Celkový Přehled (Global Analytics — 5 podstránek, 22+ detailních grafů)
-- **Podstránka 1: Přehled & Finance**
-  1. Souhrnná matice KPI (Celková útrata, denní průměr, počet záznamů, aktivní hodiny účinku vs. v těle, Safety skóre).
-  2. Skládaná časová osa denní spotřeby (s vyznačeným Min, Max, Průměrem a dotykovým inspektorem každého dne).
-  3. Finanční rozpad podle látek (Donut + kumulativní křivka výdajů s 30denní predikcí).
-  4. 84denní kalendářová mapa aktivity (s detailem konkrétního dne po kliknutí).
-  5. Dynamika 7D vs. 30D (rychlost růstu nebo klesání spotřeby a výdajů u všech látek).
-- **Podstránka 2: Druhy & Varianty (Subtypes)**
-  6. Rozpad spotřeby podle všech poddruhů napříč látkami (Top 10 nejčastějších druhů, např. *V60 Filtr*, *Green Maeng Da*).
-  7. Finanční nákladovost jednotlivých druhů (průměrná cena za dávku a celková útrata podle druhu).
-  8. Průměrná efektivní síla a hodnocení podle druhu látky.
-  9. Srovnání cest podání (RoA) a kontextových štítků napříč druhy.
-- **Podstránka 3: Korelace & Závislosti (Cross-Substance & Interval Correlations)**
-  10. Matice souběhu a Pearsonovy korelace dávek mezi látkami ($r \in [-1, +1]$ — zda vyšší dávka látky A vede k vyšší dávce látky B).
-  11. Globální bodový graf (Scatter Plot + regresní přímka): **Závislost relativní velikosti dávky na rozestupu od předchozího užití**.
-  12. Korelace času prvního ranního užití vs. celkové denní bio-zátěže (s regresní křivkou).
-  13. Korelace subjektivního zaměření/nálady v závislosti na celkové denní zátěži a kombinacích látek.
-- **Podstránka 4: Rozestupy & Rytmus**
-  14. Globální histogram rozestupů mezi dávkami (s Min, Mediánem, Průměrem a Max rozestupem).
-  15. Vývoj průměrného rozestupu v čase (Trend zkracování vs. prodlužování pauz mezi dávkami).
-  16. 24hodinový cirkadiánní hodinový profil (s vyznačením špiček v průběhu dne).
-  17. Profil dnů v týdnu (Pondělí–Neděle: srovnání pracovních dnů a víkendů v dávkách, ceně i zátěži).
-  18. Žebříček abstinence a čistých dnů (aktuální pauza vs. historický rekord u každé látky).
-- **Podstránka 5: Farmakokinetika & Tělo**
-  19. Kompozitní 48hodinová vlna: **Aktivní účinek vs. Zbytková hladina v těle** napříč látkami.
-  20. Rozložení všech dávek do 5 prahových zón (Zanedbatelná až Nebezpečná) — jednotlivé dávky vs. navrstvené špičky.
-  21. Sledování dodržování bezpečných denních limitů a spánkové hygieny.
-
-#### Režim 2: Detail Konkrétní Látky (Per-Substance Deep Dive — 5 podstránek, 24+ detailních grafů)
-- **Podstránka 1: Spotřeba & Jednotky**
-  1. Kvarteto hlavních metrik v jednotkách (Průměr na kalendářní den, Průměr na aktivní den, Min/Max/Medián dávky, Celkem jednotek a cena).
-  2. Denní spotřeba v jednotkách (Sloupcový graf + 7denní klouzavý průměr + linie Min / Avg / Max / Safe Limit + dotykový inspektor dne).
-  3. Kumulativní křivka spotřebovaných jednotek a peněz + 30denní predikční kužel.
-  4. Profil spotřeby v jednotkách podle dnů v týdnu (Pondělí–Neděle s Min/Avg/Max).
-  5. Statistické rozložení velikosti jednotlivých dávek (Histogram + kvantily Min, P25, Medián, Průměr, P90, Max).
-- **Podstránka 2: Druhy této látky (Subtypes Deep Dive)**
-  6. Podíl jednotlivých druhů této látky na celkové spotřebě v jednotkách (Donut + tabulka Min/Avg/Max dávky pro každý druh).
-  7. Vývoj obliby druhů v čase (Skládaný graf spotřeby podle druhu po dnech).
-  8. Srovnání průměrné velikosti dávky, efektivní síly a ceny za dávku mezi jednotlivými druhy této látky.
-  9. Korelace druhů látky s kontextem užití a subjektivním hodnocením účinku.
-  10. Rozpad cest podání (RoA) pro tuto látku a její druhy.
-- **Podstránka 3: Korelace & Závislosti této látky**
-  11. **Závislost velikosti dávky na délce předchozího rozestupu** (Bodový Scatter graf + lineární regresní přímka + korelační koeficient $r$ — ukazuje, zda po delší pauze následuje menší či větší dávka, nebo zda dochází k rychlému navyšování při krátkých rozestupech).
-  12. **Závislost velikosti dalšího rozestupu na velikosti předchozí dávky** (ukazuje, zda větší dávka skutečně prodlouží dobu do dalšího užití).
-  13. **Vliv času první ranní dávky na celkovou denní spotřebu této látky** (Scatter graf + regresní přímka).
-  14. **Korelace této látky s ostatními látkami** (se kterými látkami se nejčastěji kombinuje a jak se vzájemně ovlivňují velikosti dávek).
-  15. Analýza vlastních polí (Custom Fields — např. vliv plnosti žaludku nebo šarže na hodnocení účinku a velikost dávky).
-- **Podstránka 4: Rozestupy & Rytmus této látky**
-  16. Detailní distribuce rozestupů mezi dávkami (`<1h`, `1–2h`, `2–4h`, `4–8h`, `8–16h`, `16–24h`, `>24h`) s vyznačeným doporučeným minimálním rozestupem.
-  17. **Křivka vývoje rozestupů mezi dávkami v čase** (ukazuje každou mezeru mezi dávkami chronologicky včetně klouzavého průměru, minima a maxima).
-  18. 24hodinový cirkadiánní profil této látky (přesné hodiny užití + průměrný čas první a poslední dávky).
-  19. Historie abstinenčních pauz (srovnání posledních 10 nejdelších pauz bez této látky).
-- **Podstránka 5: Účinek, Tělo & Historie**
-  20. **Dvouvrstvá 7denní simulace: Křivka aktivního účinku vs. Křivka přítomnosti v těle** (s dotykovým inspektorem libovolné hodiny).
-  21. Analýza vrstvení dávek (Multi-Dose Stacking — kolikrát redosing navýšil špičku do vyššího prahového pásma a o kolik minut posunul peak).
-  22. Křivka odhadované tolerance a saturace receptorů (s výpočtem dnů do plného resetu podle upravitelných koeficientů).
-  23. Dodržování večerního limitu pro čistý spánek (zbytkový účinek vs. zbytková látka v těle v čase večerky).
-  24. Kompletní filtrovatelná tabulka záznamů této látky a jejích druhů s okamžitou úpravou.
-
-### GitHub Actions CI/CD Workflow & Testy
-- V kořenovém adresáři projektu bude vytvořen workflow soubor `.github/workflows/android-build.yml`, který při každém pushi nebo pull requestu (i při ručním spuštění `workflow_dispatch`):
-  1. Nastaví JDK 17 a Android SDK.
-  2. Spustí jednotkové a Robolectric testy (`gradle :app:testDebugUnitTest`).
-  3. Zkompiluje Debug APK (`gradle :app:assembleDebug`).
-  4. Nahraje hotový instalační balíček `Substance-debug.apk` jako stažitelný GitHub Actions Artifact.
-- Všechny nové výpočty (poddruhy, oddělená doba účinku a doba v těle, korelace velikosti dávky na rozestupu, statistiky Min/Max/Avg/Median, přepínání Light/Dark/Lightweight režimu) budou pokryty automatickými testy.
+#### Interactive Component & State Mapping
+- **Přepínání aktivních látek na Dashboardu:** Vodorovný posun lišty štítků umožní plynulé klepnutí na libovolnou aktivní látku nebo *Všechny aktivní*, zatímco klepnutí do plochy grafu přepne mezi živou PK křivkou a rozpisem jednotlivých dávek.
+- **Karty `TIME SINCE LAST` a `TODAY UNITS`:** Každá ze tří položek uvnitř karty je vykreslena jako vyplněný řádek s `Modifier.weight(1f)`, který reaguje na klepnutí (stránkování oblíbených látek `1/2` nebo přepnutí `UNITS <-> COST`).
+- **Krokování a předvolby na stránce Přidat:** Zvětšená tlačítka `-5x`, `-`, `+`, `+5x`, klikací středová hodnota pro ruční zadání, rozšířený posuvník prahových zón i vysoká tlačítka předvoleb okamžitě přepočítávají živou farmakokinetickou křivku a náklady.

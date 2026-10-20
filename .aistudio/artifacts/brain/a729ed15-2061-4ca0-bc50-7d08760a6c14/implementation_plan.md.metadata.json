@@ -1,6 +1,6 @@
 {
-  "summary": "Architektonický a produktový plán pro finální verzi aplikace Substance: poddruhy (subtypy) látek s vlastní cenou/silou a grafy, interaktivní analytika s inspektorem bodů (Min/Max/Průměr/Medián/P90) rozdělená do 5 specializovaných podstránek (Globální i Per-Substance), oddělená nepovinná doba účinku vs. doba v těle, plně nastavitelné globální i lokální konstanty výpočtů, přehledné podstránky v Nastavení a Editoru látky, profesionální Dark/Light režim s Lightweight přepínačem bez efektů, GitHub Actions CI workflow a automatické testy.",
-  "updatedAt": "2026-10-18T18:02:19.737380542Z",
+  "summary": "Plán kompletní optimalizace hustoty rozvržení, odstranění prázdných mezer v kartách a zvětšení grafů, tlačítek a písma na Přehledu (Dashboard), stránce Přidat (Nový záznam), v Analytice i Katalogu látek.",
+  "updatedAt": "2026-10-20T07:05:18.137053040Z",
   "requestFeedback": true,
   "userFacing": true
 }

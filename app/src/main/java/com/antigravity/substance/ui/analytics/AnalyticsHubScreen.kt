@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -45,9 +46,9 @@ import com.antigravity.substance.ui.theme.SubstanceIcons
 
 /**
  * SCREEN 3: PROFESSIONAL BIO-ANALYTICS SUITE (45+ INTERACTIVE VISUALIZATIONS)
- * Organized into:
- * - Mode A: Global Overview (5 Sub-Pages)
- * - Mode B: Per-Substance Deep Dive (5 Sub-Pages)
+ * Styled in Matte OLED & Indigo matching the reference screenshots:
+ * - Header Row with "Analytika" title on left + Segmented Timeframe Capsule (7d | 14d | 30d | 90d | Vše) on right
+ * - Dark Pill Chips with Indigo (#5B4DFF) active border for Mode, Substance, and 5 Sub-Pages
  */
 @Composable
 fun AnalyticsHubScreen(
@@ -101,11 +102,8 @@ fun AnalyticsHubScreen(
     val accentColor = if (selectedMode == 1 && selectedSubstance != null) {
         Color(selectedSubstance.colorHex)
     } else {
-        Color(0xFF06B6D4)
+        glassEnv.primaryAccent
     }
-
-    val chipBgInactive = if (glassEnv.isLightMode) Color(0xFFE2E8F0) else Color.White.copy(alpha = 0.05f)
-    val chipBorderInactive = glassEnv.cardBorderBase
 
     DynamicAmbientGlowBox(
         activeTier = DoseTier.LIGHT,
@@ -115,41 +113,103 @@ fun AnalyticsHubScreen(
             .testTag("analytics_hub_screen_root")
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Top Controls Bar: Mode Switcher + Timeframe + Substance Selector + 5 Sub-Pages Bar
+            // Top Controls Bar matching the reference screenshots
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 10.dp, vertical = 6.dp),
-                verticalArrangement = Arrangement.spacedBy(5.dp)
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                // Row 1: Mode Switcher (Global vs Per-Substance)
+                // Row 0: "Analytika" Title + Top-Right Segmented Timeframe Capsule (7d | 14d | 30d | 90d | Vše)
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(chipBgInactive)
-                        .border(1.dp, chipBorderInactive, RoundedCornerShape(12.dp))
-                        .padding(3.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Analytika",
+                        style = MaterialTheme.typography.headlineMedium.copy(
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = glassEnv.textPrimary
+                    )
+
+                    // Compact Segmented Capsule matching reference screenshot top-right bar
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(glassEnv.cardSurfaceBase)
+                            .border(1.dp, glassEnv.cardBorderBase, RoundedCornerShape(10.dp))
+                            .padding(2.dp),
+                        horizontalArrangement = Arrangement.spacedBy(2.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val timeframes = listOf(
+                            7 to "7D",
+                            14 to "14D",
+                            30 to "30D",
+                            90 to "90D",
+                            365 to "1R"
+                        )
+                        timeframes.forEach { (days, label) ->
+                            val active = selectedTimeframeDays == days
+                            val displayLabel = when (days) {
+                                7 -> "7d"
+                                14 -> "14d"
+                                30 -> "30d"
+                                90 -> "90d"
+                                else -> "Vše"
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(
+                                        if (active) glassEnv.badgeSurface
+                                        else Color.Transparent
+                                    )
+                                    .clickable { selectedTimeframeDays = days }
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                                    .testTag("timeframe_chip_${label.lowercase()}"),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = displayLabel,
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontSize = 10.sp,
+                                        fontWeight = if (active) FontWeight.Bold else FontWeight.Medium
+                                    ),
+                                    color = if (active) glassEnv.textPrimary else glassEnv.textSecondary
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Row 1: Mode Switcher Pill Row (Všechny látky / Celkový přehled vs Detail látky)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     val modes = listOf(
-                        0 to "Celkový Přehled (Global)",
-                        1 to "Detail Látky (Per-Substance)"
+                        0 to "Všechny látky (Přehled)",
+                        1 to "Detail látky (${selectedSubstance?.name ?: "Látka"})"
                     )
                     modes.forEach { (mIdx, mLabel) ->
                         val active = selectedMode == mIdx
+                        val pillShape = RoundedCornerShape(50)
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(RoundedCornerShape(9.dp))
+                                .clip(pillShape)
                                 .background(
-                                    if (active) accentColor.copy(alpha = 0.22f)
-                                    else Color.Transparent
+                                    if (active) glassEnv.pillSurfaceActive
+                                    else glassEnv.pillSurfaceInactive
                                 )
                                 .border(
-                                    width = if (active) 1.dp else 0.dp,
-                                    color = if (active) accentColor else Color.Transparent,
-                                    shape = RoundedCornerShape(9.dp)
+                                    width = if (active) 1.3.dp else 1.dp,
+                                    color = if (active) glassEnv.pillBorderActive else glassEnv.pillBorderInactive,
+                                    shape = pillShape
                                 )
                                 .clickable { selectedMode = mIdx }
                                 .padding(vertical = 6.dp)
@@ -158,17 +218,18 @@ fun AnalyticsHubScreen(
                         ) {
                             Text(
                                 text = mLabel,
-                                style = MaterialTheme.typography.labelLarge.copy(
+                                style = MaterialTheme.typography.titleMedium.copy(
                                     fontSize = 11.sp,
                                     fontWeight = if (active) FontWeight.Bold else FontWeight.Medium
                                 ),
-                                color = if (active) glassEnv.textPrimary else glassEnv.textSecondary
+                                color = if (active) glassEnv.textPrimary else glassEnv.textSecondary,
+                                maxLines = 1
                             )
                         }
                     }
                 }
 
-                // Row 2: Substance Selector when in Per-Substance Mode
+                // Row 2: Substance Filter Pills when in Per-Substance Mode
                 if (selectedMode == 1) {
                     Row(
                         modifier = Modifier
@@ -180,20 +241,21 @@ fun AnalyticsHubScreen(
                             val isSelected = sub.id == selectedSubstance?.id
                             val subColor = Color(sub.colorHex)
                             val subCount = subtypes.count { it.substanceId == sub.id }
+                            val pillShape = RoundedCornerShape(50)
                             Row(
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(10.dp))
+                                    .clip(pillShape)
                                     .background(
-                                        if (isSelected) subColor.copy(alpha = 0.22f)
-                                        else chipBgInactive
+                                        if (isSelected) lerp(glassEnv.cardSurfaceBase, subColor, 0.20f)
+                                        else glassEnv.pillSurfaceInactive
                                     )
                                     .border(
-                                        width = if (isSelected) 1.2.dp else 0.8.dp,
-                                        color = if (isSelected) subColor else chipBorderInactive,
-                                        shape = RoundedCornerShape(10.dp)
+                                        width = if (isSelected) 1.3.dp else 1.dp,
+                                        color = if (isSelected) subColor else glassEnv.pillBorderInactive,
+                                        shape = pillShape
                                     )
                                     .clickable { selectedSubstanceId = sub.id }
-                                    .padding(horizontal = 10.dp, vertical = 5.dp)
+                                    .padding(horizontal = 11.dp, vertical = 5.dp)
                                     .testTag("analytics_sub_${sub.name.lowercase()}"),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -206,98 +268,58 @@ fun AnalyticsHubScreen(
                                 Spacer(modifier = Modifier.width(5.dp))
                                 Text(
                                     text = "${sub.name} (${sub.defaultUnit}) • $subCount druhů",
-                                    style = MaterialTheme.typography.labelLarge.copy(fontSize = 10.sp),
-                                    color = glassEnv.textPrimary
+                                    style = MaterialTheme.typography.labelLarge.copy(
+                                        fontSize = 10.5.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                    ),
+                                    color = if (isSelected) glassEnv.textPrimary else glassEnv.textSecondary
                                 )
                             }
                         }
                     }
                 }
 
-                // Row 3: 5 Sub-Pages Navigation Strip + Timeframe Chips
+                // Row 3: 5 Sub-Pages Pill Strip
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(5.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     val subPages = listOf(
-                        0 to "1. Přehled",
-                        1 to "2. Druhy",
-                        2 to "3. Korelace",
-                        3 to "4. Rozestupy",
-                        4 to "5. PK & Tělo",
-                        5 to "Vše"
+                        0 to "Přehled",
+                        1 to "Druhy",
+                        2 to "Korelace",
+                        3 to "Rozestupy",
+                        4 to "PK & Tělo",
+                        5 to "Všechny grafy"
                     )
                     subPages.forEach { (spIdx, spLabel) ->
                         val active = selectedSubPage == spIdx
+                        val pillShape = RoundedCornerShape(50)
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
+                                .clip(pillShape)
                                 .background(
-                                    if (active) accentColor.copy(alpha = 0.24f)
-                                    else chipBgInactive
+                                    if (active) glassEnv.pillSurfaceActive
+                                    else glassEnv.pillSurfaceInactive
                                 )
                                 .border(
-                                    width = if (active) 1.dp else 0.8.dp,
-                                    color = if (active) accentColor else chipBorderInactive,
-                                    shape = RoundedCornerShape(8.dp)
+                                    width = if (active) 1.3.dp else 1.dp,
+                                    color = if (active) glassEnv.pillBorderActive else glassEnv.pillBorderInactive,
+                                    shape = pillShape
                                 )
                                 .clickable { selectedSubPage = spIdx }
-                                .padding(horizontal = 9.dp, vertical = 5.dp)
+                                .padding(horizontal = 12.dp, vertical = 5.dp)
                                 .testTag("analytics_subpage_tab_$spIdx"),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = spLabel,
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    fontSize = 10.sp,
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontSize = 10.5.sp,
                                     fontWeight = if (active) FontWeight.Bold else FontWeight.Medium
-                                ),
-                                color = if (active) accentColor else glassEnv.textSecondary
-                            )
-                        }
-                    }
-                }
-
-                // Row 4: Timeframe Selector
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(5.dp)
-                ) {
-                    val timeframes = listOf(
-                        7 to "7D",
-                        14 to "14D",
-                        30 to "30D",
-                        90 to "90D",
-                        365 to "1R"
-                    )
-                    timeframes.forEach { (days, label) ->
-                        val active = selectedTimeframeDays == days
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(
-                                    if (active) accentColor.copy(alpha = 0.18f)
-                                    else chipBgInactive
-                                )
-                                .border(
-                                    width = 0.8.dp,
-                                    color = if (active) accentColor else chipBorderInactive,
-                                    shape = RoundedCornerShape(8.dp)
-                                )
-                                .clickable { selectedTimeframeDays = days }
-                                .padding(vertical = 3.5.dp)
-                                .testTag("timeframe_chip_${label.lowercase()}"),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = label,
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    fontSize = 9.5.sp,
-                                    fontWeight = if (active) FontWeight.Bold else FontWeight.Normal
                                 ),
                                 color = if (active) glassEnv.textPrimary else glassEnv.textSecondary
                             )

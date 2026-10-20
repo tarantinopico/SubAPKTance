@@ -97,6 +97,10 @@ fun SettingsControlCenterScreen(
         isLightweightMode: Boolean?,
         showChartMinMaxAvgLines: Boolean?
     ) -> Unit,
+    onUpdateStyleCustomization: (
+        primaryAccentHex: Long?,
+        cardCornerRadiusDp: Int?
+    ) -> Unit = { _, _ -> },
     onUpdateGlobalMathConstants: (
         tolGainFactor: Double?,
         tolDecayPerDay: Double?,
@@ -165,7 +169,7 @@ fun SettingsControlCenterScreen(
 
     DynamicAmbientGlowBox(
         activeTier = DoseTier.LIGHT,
-        overrideAccentColor = Color(0xFF06B6D4),
+        overrideAccentColor = glassEnv.primaryAccent,
         modifier = modifier
             .fillMaxSize()
             .testTag("settings_control_center_root")
@@ -179,16 +183,16 @@ fun SettingsControlCenterScreen(
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Text(
-                    text = "NASTAVENÍ, VÝPOČTY & SPRÁVA DAT",
+                    text = "NASTAVENÍ, VZHLED, VÝPOČTY & SPRÁVA DAT",
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontSize = 9.5.sp,
-                        color = Color(0xFF06B6D4),
+                        color = glassEnv.primaryAccent,
                         letterSpacing = 0.7.sp,
                         fontWeight = FontWeight.Bold
                     )
                 )
                 Text(
-                    text = "Control Center",
+                    text = "Nastavení & Control Center",
                     style = MaterialTheme.typography.headlineMedium,
                     color = glassEnv.textPrimary
                 )
@@ -208,29 +212,30 @@ fun SettingsControlCenterScreen(
                     )
                     tabs.forEach { (idx, lbl) ->
                         val active = selectedSubPage == idx
+                        val pillShape = RoundedCornerShape(50)
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(9.dp))
+                                .clip(pillShape)
                                 .background(
-                                    if (active) Color(0xFF06B6D4).copy(alpha = 0.22f)
-                                    else glassEnv.cardBorderBase.copy(alpha = 0.25f)
+                                    if (active) glassEnv.pillSurfaceActive
+                                    else glassEnv.pillSurfaceInactive
                                 )
                                 .border(
-                                    width = if (active) 1.dp else 0.8.dp,
-                                    color = if (active) Color(0xFF06B6D4) else glassEnv.cardBorderBase,
-                                    shape = RoundedCornerShape(9.dp)
+                                    width = if (active) 1.3.dp else 1.dp,
+                                    color = if (active) glassEnv.pillBorderActive else glassEnv.pillBorderInactive,
+                                    shape = pillShape
                                 )
                                 .clickable { selectedSubPage = idx }
-                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
                                 .testTag("settings_subpage_tab_$idx")
                         ) {
                             Text(
                                 text = lbl,
                                 style = MaterialTheme.typography.labelSmall.copy(
-                                    fontSize = 10.sp,
+                                    fontSize = 10.5.sp,
                                     fontWeight = if (active) FontWeight.Bold else FontWeight.Medium
                                 ),
-                                color = if (active) Color(0xFF06B6D4) else glassEnv.textSecondary
+                                color = if (active) glassEnv.textPrimary else glassEnv.textSecondary
                             )
                         }
                     }
@@ -255,19 +260,20 @@ fun SettingsControlCenterScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     // =========================================================================
-                    // SUB-PAGE 1: VZHLED, LIGHT MODE & LIGHTWEIGHT MODE
+                    // SUB-PAGE 1: VZHLED, MOTIV KARET, AKCENTOVÁ BARVA & LIGHTWEIGHT REŽIM
                     // =========================================================================
                     if (selectedSubPage == 0) {
                         item {
                             FrostedBentoCard(
                                 modifier = Modifier.fillMaxWidth(),
-                                accentColor = Color(0xFF06B6D4)
+                                accentColor = glassEnv.primaryAccent
                             ) {
-                                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                     BentoMicroHeader(
-                                        title = "1. REŽIM VZHLEDU (DARK MODE VS LIGHT MODE)",
+                                        title = "MOTIV VZHLEDU (MATNÝ OLED, BŘIDLICE NEBO LIGHT)",
                                         icon = Icons.Default.Palette,
-                                        accentColor = Color(0xFF06B6D4)
+                                        accentColor = glassEnv.primaryAccent,
+                                        trailingText = "MOTIV"
                                     )
 
                                     Row(
@@ -290,32 +296,45 @@ fun SettingsControlCenterScreen(
                                         Switch(
                                             checked = settings.isLightMode,
                                             onCheckedChange = { isLight ->
-                                                onUpdateVisualTheme(null, null, null, null, if (isLight) "CLINICAL_LIGHT" else "PROFESSIONAL_SLATE", isLight, null, null)
+                                                onUpdateVisualTheme(
+                                                    null,
+                                                    null,
+                                                    null,
+                                                    null,
+                                                    if (isLight) "CLINICAL_LIGHT" else "OLED_MATTE_INDIGO",
+                                                    isLight,
+                                                    null,
+                                                    null
+                                                )
                                             },
                                             modifier = Modifier.testTag("toggle_light_mode_switch")
                                         )
                                     }
 
-                                    // Theme Presets
-                                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    // 4 Theme Presets
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
                                         listOf(
-                                            "PROFESSIONAL_SLATE" to "Profesionální Dark",
+                                            "OLED_MATTE_INDIGO" to "Matný OLED",
                                             "PITCH_BLACK_AMOLED" to "Černá AMOLED",
+                                            "PROFESSIONAL_SLATE" to "Břidlicová",
                                             "CLINICAL_LIGHT" to "Světlý Light"
                                         ).forEach { (presetKey, label) ->
                                             val sel = settings.darkThemePreset == presetKey
                                             Box(
                                                 modifier = Modifier
                                                     .weight(1f)
-                                                    .clip(RoundedCornerShape(8.dp))
+                                                    .clip(RoundedCornerShape(50))
                                                     .background(
-                                                        if (sel) Color(0xFF06B6D4).copy(alpha = 0.22f)
-                                                        else glassEnv.cardBorderBase.copy(alpha = 0.25f)
+                                                        if (sel) glassEnv.pillSurfaceActive
+                                                        else glassEnv.pillSurfaceInactive
                                                     )
                                                     .border(
-                                                        1.dp,
-                                                        if (sel) Color(0xFF06B6D4) else glassEnv.cardBorderBase,
-                                                        RoundedCornerShape(8.dp)
+                                                        width = if (sel) 1.3.dp else 1.dp,
+                                                        color = if (sel) glassEnv.pillBorderActive else glassEnv.pillBorderInactive,
+                                                        shape = RoundedCornerShape(50)
                                                     )
                                                     .clickable {
                                                         val light = presetKey == "CLINICAL_LIGHT"
@@ -327,13 +346,157 @@ fun SettingsControlCenterScreen(
                                                 Text(
                                                     text = label,
                                                     style = MaterialTheme.typography.labelSmall.copy(
-                                                        fontSize = 9.5.sp,
+                                                        fontSize = 9.sp,
                                                         fontWeight = if (sel) FontWeight.Bold else FontWeight.Medium
                                                     ),
-                                                    color = glassEnv.textPrimary
+                                                    color = if (sel) glassEnv.textPrimary else glassEnv.textSecondary,
+                                                    maxLines = 1
                                                 )
                                             }
                                         }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Accent Color Palette & Card Corner Radius / Surface Customization Card
+                        item {
+                            FrostedBentoCard(
+                                modifier = Modifier.fillMaxWidth(),
+                                accentColor = glassEnv.primaryAccent
+                            ) {
+                                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    BentoMicroHeader(
+                                        title = "HLAVNÍ AKCENTOVÁ BARVA & TVAR KARET",
+                                        icon = Icons.Default.Palette,
+                                        accentColor = glassEnv.primaryAccent,
+                                        trailingText = "STYL UI"
+                                    )
+
+                                    Text(
+                                        text = "Zvolte hlavní akcentovou barvu pro aktivní pilulky, tlačítka a zvýraznění:",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = glassEnv.textSecondary
+                                    )
+
+                                    val accentPresets = listOf(
+                                        0xFF5B4DFFL to "Indigo",
+                                        0xFF8B5CF6L to "Fialová",
+                                        0xFF3B82F6L to "Modrá",
+                                        0xFF06B6D4L to "Azurová",
+                                        0xFF10B981L to "Smaragd",
+                                        0xFFF59E0BL to "Jantar",
+                                        0xFFEC4899L to "Růžová"
+                                    )
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .horizontalScroll(rememberScrollState()),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        accentPresets.forEach { (hexVal, name) ->
+                                            val isSelected = settings.primaryAccentHex == hexVal
+                                            val swatchColor = Color(hexVal)
+                                            Row(
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(50))
+                                                    .background(
+                                                        if (isSelected) swatchColor.copy(alpha = 0.22f)
+                                                        else glassEnv.pillSurfaceInactive
+                                                    )
+                                                    .border(
+                                                        width = if (isSelected) 1.5.dp else 1.dp,
+                                                        color = if (isSelected) swatchColor else glassEnv.pillBorderInactive,
+                                                        shape = RoundedCornerShape(50)
+                                                    )
+                                                    .clickable { onUpdateStyleCustomization(hexVal, null) }
+                                                    .padding(horizontal = 11.dp, vertical = 6.dp)
+                                                    .testTag("accent_swatch_${name.lowercase()}"),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                            ) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(12.dp)
+                                                        .clip(RoundedCornerShape(50))
+                                                        .background(swatchColor)
+                                                )
+                                                Text(
+                                                    text = name,
+                                                    style = MaterialTheme.typography.labelSmall.copy(
+                                                        fontSize = 10.sp,
+                                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                                    ),
+                                                    color = if (isSelected) glassEnv.textPrimary else glassEnv.textSecondary
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    // Card Corner Radius Slider & Quick Chips
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "Zaoblení rohů karet: ${settings.cardCornerRadiusDp} dp",
+                                            style = MaterialTheme.typography.labelLarge,
+                                            color = glassEnv.textPrimary
+                                        )
+                                        Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                                            listOf(12, 16, 20, 24, 28).forEach { rDp ->
+                                                val sel = settings.cardCornerRadiusDp == rDp
+                                                Box(
+                                                    modifier = Modifier
+                                                        .clip(RoundedCornerShape(50))
+                                                        .background(if (sel) glassEnv.pillSurfaceActive else glassEnv.pillSurfaceInactive)
+                                                        .border(
+                                                            1.dp,
+                                                            if (sel) glassEnv.pillBorderActive else glassEnv.pillBorderInactive,
+                                                            RoundedCornerShape(50)
+                                                        )
+                                                        .clickable { onUpdateStyleCustomization(null, rDp) }
+                                                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                                                ) {
+                                                    Text(
+                                                        text = "${rDp}dp",
+                                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                                        color = if (sel) glassEnv.textPrimary else glassEnv.textSecondary
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                    Slider(
+                                        value = settings.cardCornerRadiusDp.toFloat(),
+                                        onValueChange = { onUpdateStyleCustomization(null, it.roundToInt()) },
+                                        valueRange = 10f..32f
+                                    )
+
+                                    // Card Opacity / Saturation & Border Intensity
+                                    if (!settings.isLightMode) {
+                                        Text(
+                                            text = "Sytost matného povrchu karet: ${(settings.glassOpacity * 100).roundToInt()}%",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = glassEnv.textSecondary
+                                        )
+                                        Slider(
+                                            value = settings.glassOpacity,
+                                            onValueChange = { onUpdateVisualTheme(it, null, null, null, null, null, null, null) },
+                                            valueRange = 0.65f..1.0f
+                                        )
+
+                                        Text(
+                                            text = "Zvýraznění okrajů karet: ${(settings.specularBorderIntensity * 100).roundToInt()}%",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = glassEnv.textSecondary
+                                        )
+                                        Slider(
+                                            value = settings.specularBorderIntensity,
+                                            onValueChange = { onUpdateVisualTheme(null, it, null, null, null, null, null, null) },
+                                            valueRange = 0.04f..0.45f
+                                        )
                                     }
                                 }
                             }
@@ -347,7 +510,7 @@ fun SettingsControlCenterScreen(
                             ) {
                                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                                     BentoMicroHeader(
-                                        title = "2. VÝKON & LIGHTWEIGHT REŽIM (VYPNUTÍ EFEKTŮ)",
+                                        title = "VÝKON & LIGHTWEIGHT REŽIM (VYPNUTÍ EFEKTŮ)",
                                         icon = Icons.Default.Speed,
                                         accentColor = Color(0xFF10B981),
                                         trailingText = if (settings.isLightweightMode) "LIGHTWEIGHT AKTIVNÍ" else "STANDARDNÍ"
@@ -365,7 +528,7 @@ fun SettingsControlCenterScreen(
                                                 color = glassEnv.textPrimary
                                             )
                                             Text(
-                                                text = "Vypne barevné aury pozadí, pulzující animace a poloprůhledné přechody pro okamžitou odezvu a nulovou zátěž baterie",
+                                                text = "Čistý matný OLED povrch bez barevných aur pozadí a pulzujících animací pro maximální plynulost",
                                                 style = MaterialTheme.typography.bodyMedium,
                                                 color = glassEnv.textSecondary
                                             )
@@ -406,9 +569,9 @@ fun SettingsControlCenterScreen(
 
                                     if (!settings.isLightweightMode && !settings.isLightMode) {
                                         Text(
-                                            text = "Intenzita podsvícení pozadí: ${(settings.ambientGlowIntensity * 100).roundToInt()}%",
+                                            text = "Volitelné barevné podsvícení pozadí (0% = čistý matný OLED): ${(settings.ambientGlowIntensity * 100).roundToInt()}%",
                                             style = MaterialTheme.typography.labelSmall,
-                                            color = glassEnv.textPrimary
+                                            color = glassEnv.textSecondary
                                         )
                                         Slider(
                                             value = settings.ambientGlowIntensity,

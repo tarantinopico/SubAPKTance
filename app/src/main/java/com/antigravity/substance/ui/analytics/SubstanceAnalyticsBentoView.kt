@@ -27,8 +27,8 @@ import androidx.compose.material.icons.filled.AutoGraph
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.automirrored.filled.CompareArrows
 import androidx.compose.material.icons.filled.Category
-import androidx.compose.material.icons.filled.CompareArrows
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
@@ -593,7 +593,7 @@ fun SubstanceAnalyticsBentoView(
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         BentoMicroHeader(
                             title = "10. ZÁVISLOST DÉLKY DALŠÍ PAUZY NA VELIKOSTI PŘEDCHOZÍ DÁVKY",
-                            icon = Icons.Default.CompareArrows,
+                            icon = Icons.AutoMirrored.Filled.CompareArrows,
                             accentColor = Color(0xFF38BDF8),
                             trailingText = "r = ${String.format(Locale.US, "%+.2f", report.doseVsNextIntervalRegression.pearsonR)}"
                         )
@@ -1229,13 +1229,17 @@ private fun SubMetricCell(
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(color.copy(alpha = if (glassEnv.isLightMode) 0.10f else 0.08f))
-            .border(1.dp, color.copy(alpha = 0.28f), RoundedCornerShape(12.dp))
-            .padding(horizontal = 8.dp, vertical = 6.dp)
+            .background(color.copy(alpha = if (glassEnv.isLightMode) 0.10f else 0.09f))
+            .border(1.dp, color.copy(alpha = 0.32f), RoundedCornerShape(12.dp))
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontSize = 9.5.sp,
+                fontWeight = FontWeight.SemiBold
+            ),
             color = glassEnv.textSecondary,
             maxLines = 1
         )
@@ -1244,7 +1248,7 @@ private fun SubMetricCell(
             style = MaterialTheme.typography.titleMedium.copy(
                 fontFamily = RobotoMonoFontFamily,
                 fontWeight = FontWeight.Bold,
-                fontSize = 13.5.sp
+                fontSize = 15.sp
             ),
             color = glassEnv.textPrimary,
             maxLines = 1,
@@ -1252,7 +1256,10 @@ private fun SubMetricCell(
         )
         Text(
             text = sub,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp),
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Medium
+            ),
             color = color,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis

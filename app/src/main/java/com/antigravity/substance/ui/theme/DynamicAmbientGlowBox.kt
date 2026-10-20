@@ -21,9 +21,9 @@ import androidx.compose.ui.graphics.Color
 import com.antigravity.substance.domain.model.DoseTier
 
 /**
- * Full-viewport background container that renders the clean professional surface.
- * When Lightweight Mode is enabled (or ambientGlowIntensity == 0), skips all infinite
- * animations and radial gradients for zero GPU overhead.
+ * Background container that defaults to a pure Matte OLED pitch-black (#000000) canvas
+ * matching the reference screenshots, while still supporting optional ambient radial glow
+ * if the user increases ambientGlowIntensity in Settings.
  */
 @Composable
 fun DynamicAmbientGlowBox(
@@ -34,7 +34,9 @@ fun DynamicAmbientGlowBox(
 ) {
     val glassEnv = LocalSubstanceGlass.current
 
-    if (glassEnv.isLightweightMode || glassEnv.ambientGlowIntensity <= 0.01f) {
+    // In default Matte OLED mode (ambientGlowIntensity <= 0.02f) or Lightweight mode,
+    // render a clean, distraction-free solid canvas background (#000000 in OLED dark mode).
+    if (glassEnv.isLightweightMode || glassEnv.ambientGlowIntensity <= 0.02f) {
         Box(
             modifier = modifier
                 .fillMaxSize()
@@ -44,63 +46,78 @@ fun DynamicAmbientGlowBox(
         return
     }
 
-    val targetPrimaryColor = overrideAccentColor ?: activeTier.primaryColor
-    val targetSecondaryColor = activeTier.secondaryColor
+    val targetPrimary = overrideAccentColor ?: activeTier.primaryColor
+    val targetSecondary = Color(activeTier.secondaryColorHex)
 
     val animatedPrimary by animateColorAsState(
-        targetValue = targetPrimaryColor,
-        animationSpec = tween(durationMillis = 550, easing = FastOutSlowInEasing),
+        targetValue = targetPrimary,
+        animationSpec = tween(durationMillis = 650, easing = FastOutSlowInEasing),
         label = "ambientPrimaryColor"
     )
     val animatedSecondary by animateColorAsState(
-        targetValue = targetSecondaryColor,
-        animationSpec = tween(durationMillis = 550, easing = FastOutSlowInEasing),
+        targetValue = targetSecondary,
+        animationSpec = tween(durationMillis = 650, easing = FastOutSlowInEasing),
         label = "ambientSecondaryColor"
     )
 
     val infiniteTransition = rememberInfiniteTransition(label = "ambientPulse")
-    val pulseFraction by infiniteTransition.animateFloat(
+    val pulseFactor by infiniteTransition.animateFloat(
         initialValue = 0.88f,
-        targetValue = 1.12f,
+        targetValue = 1.08f,
         animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = activeTier.pulseDurationMs.coerceIn(1100, 4500),
-                easing = FastOutSlowInEasing
-            ),
+            animation = tween(durationMillis = 3600, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "pulseRadius"
+        label = "pulseFactor"
     )
 
-    val modeMultiplier = if (glassEnv.isLightMode) 0.32f else 0.72f
-    val effectiveAlpha = (activeTier.ambientAlpha * glassEnv.ambientGlowIntensity * modeMultiplier).coerceIn(0f, 0.65f)
+    val glowAlphaMultiplier = if (glassEnv.isLightMode) {
+        (glassEnv.ambientGlowIntensity * 0.25f).coerceIn(0f, 0.22f)
+    } else {
+        (glassEnv.ambientGlowIntensity * 0.55f).coerceIn(0f, 0.55f)
+    }
 
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        glassEnv.canvasBackgroundTop,
-                        glassEnv.canvasBackgroundBottom
+            .drawBehind {
+                val w = size.width
+                val h = size.height
+
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(glassEnv.canvasBackgroundTop, glassEnv.canvasBackgroundBottom)
                     )
                 )
-            )
-            .drawBehind {
-                if (effectiveAlpha > 0.01f && size.width > 0f && size.height > 0f) {
-                    val maxDim = size.maxDimension.coerceAtLeast(100f)
+
+                if (glowAlphaMultiplier > 0.01f && w > 0f && h > 0f) {
+                    val primaryAlpha = (0.24f * glowAlphaMultiplier * pulseFactor).coerceIn(0f, 0.45f)
                     drawCircle(
                         brush = Brush.radialGradient(
                             colors = listOf(
-                                animatedPrimary.copy(alpha = effectiveAlpha * 0.45f),
-                                animatedSecondary.copy(alpha = effectiveAlpha * 0.16f),
+                                animatedPrimary.copy(alpha = primaryAlpha),
+                                animatedPrimary.copy(alpha = primaryAlpha * 0.25f),
                                 Color.Transparent
                             ),
-                            center = Offset(size.width * 0.5f, size.height * 0.25f),
-                            radius = (maxDim * 0.52f * pulseFraction).coerceAtLeast(10f)
+                            center = Offset(w * 0.25f, h * 0.14f),
+                            radius = w * 0.85f * pulseFactor
                         ),
-                        center = Offset(size.width * 0.5f, size.height * 0.25f),
-                        radius = (maxDim * 0.52f * pulseFraction).coerceAtLeast(10f)
+                        center = Offset(w * 0.25f, h * 0.14f),
+                        radius = w * 0.85f * pulseFactor
+                    )
+
+                    val secondaryAlpha = (0.16f * glowAlphaMultiplier).coerceIn(0f, 0.35f)
+                    drawCircle(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                animatedSecondary.copy(alpha = secondaryAlpha),
+                                Color.Transparent
+                            ),
+                            center = Offset(w * 0.82f, h * 0.72f),
+                            radius = w * 0.75f
+                        ),
+                        center = Offset(w * 0.82f, h * 0.72f),
+                        radius = w * 0.75f
                     )
                 }
             },

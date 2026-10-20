@@ -23,8 +23,8 @@ import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.AutoGraph
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.automirrored.filled.CompareArrows
 import androidx.compose.material.icons.filled.Category
-import androidx.compose.material.icons.filled.CompareArrows
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Hub
@@ -108,8 +108,8 @@ fun GlobalAnalyticsBentoView(
         modifier = modifier
             .fillMaxWidth()
             .testTag("global_analytics_list"),
-        contentPadding = PaddingValues(start = 10.dp, end = 10.dp, top = 4.dp, bottom = 92.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        contentPadding = PaddingValues(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 92.dp),
+        verticalArrangement = Arrangement.spacedBy(9.dp)
     ) {
         // =========================================================================
         // SUB-PAGE 1: PŘEHLED & FINANCE
@@ -651,7 +651,7 @@ fun GlobalAnalyticsBentoView(
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         BentoMicroHeader(
                             title = "12. VLIV ČASU PRVNÍ DÁVKY NA CELKOVOU DENNÍ ZÁTĚŽ",
-                            icon = Icons.Default.CompareArrows,
+                            icon = Icons.AutoMirrored.Filled.CompareArrows,
                             accentColor = Color(0xFFF59E0B),
                             trailingText = "r = ${String.format(Locale.US, "%+.2f", report.firstDoseHourVsDailyLoadRegression.pearsonR)}"
                         )
@@ -1092,12 +1092,16 @@ private fun KpiMiniBox(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
             .background(color.copy(alpha = if (glassEnv.isLightMode) 0.10f else 0.09f))
-            .border(1.dp, color.copy(alpha = 0.30f), RoundedCornerShape(12.dp))
-            .padding(horizontal = 8.dp, vertical = 6.dp)
+            .border(1.dp, color.copy(alpha = 0.32f), RoundedCornerShape(12.dp))
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontSize = 9.5.sp,
+                fontWeight = FontWeight.SemiBold
+            ),
             color = glassEnv.textSecondary,
             maxLines = 1
         )
@@ -1106,7 +1110,7 @@ private fun KpiMiniBox(
             style = MaterialTheme.typography.titleMedium.copy(
                 fontFamily = com.antigravity.substance.ui.theme.RobotoMonoFontFamily,
                 fontWeight = FontWeight.Bold,
-                fontSize = 13.sp
+                fontSize = 15.sp
             ),
             color = glassEnv.textPrimary,
             maxLines = 1,
@@ -1114,7 +1118,10 @@ private fun KpiMiniBox(
         )
         Text(
             text = sub,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp),
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Medium
+            ),
             color = color,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis

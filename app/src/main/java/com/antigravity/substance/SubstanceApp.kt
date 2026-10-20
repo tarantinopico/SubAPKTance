@@ -17,9 +17,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Science
@@ -38,7 +39,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
@@ -55,16 +55,17 @@ import com.antigravity.substance.ui.logger.LogDoseScreen
 import com.antigravity.substance.ui.logger.LogDoseViewModel
 import com.antigravity.substance.ui.settings.SettingsControlCenterScreen
 import com.antigravity.substance.ui.substances.SubstanceListScreen
+import com.antigravity.substance.ui.theme.LatkyTopBrandHeader
 import com.antigravity.substance.ui.theme.LocalSubstanceGlass
 import com.antigravity.substance.ui.theme.SubstanceGlassTheme
 import kotlinx.coroutines.launch
 
 enum class SubstanceTab(val label: String, val icon: ImageVector, val tag: String) {
-    DASHBOARD("Cockpit", Icons.Default.Dashboard, "nav_tab_dashboard"),
-    LOG_DOSE("Log Dose", Icons.Default.AddCircle, "nav_tab_log_dose"),
-    ANALYTICS("Analytics", Icons.Default.Analytics, "nav_tab_analytics"),
-    SUBSTANCES("Studio", Icons.Default.Science, "nav_tab_substances"),
-    SETTINGS("Control", Icons.Default.Tune, "nav_tab_settings")
+    DASHBOARD("Přehled", Icons.Default.Dashboard, "nav_tab_dashboard"),
+    LOG_DOSE("Přidat", Icons.Default.Add, "nav_tab_log_dose"),
+    ANALYTICS("Analytika", Icons.Default.Analytics, "nav_tab_analytics"),
+    SUBSTANCES("Látky", Icons.Default.Science, "nav_tab_substances"),
+    SETTINGS("Nastavení", Icons.Default.Tune, "nav_tab_settings")
 }
 
 @Composable
@@ -101,13 +102,25 @@ fun SubstanceApp(
 
     SubstanceGlassTheme(settings = settings) {
         val glass = LocalSubstanceGlass.current
+        val safetyScore = remember(dashboardState.totalBioLoadFraction) {
+            (100 - (dashboardState.totalBioLoadFraction * 45f).toInt()).coerceIn(10, 100)
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(glass.canvasBackgroundTop)
                 .windowInsetsPadding(WindowInsets.statusBars)
         ) {
-            // Main Viewport Content (Above Compact Floating Glass Bottom Nav Bar)
+            // Top Látky Brand & Offline Status Header matching screenshots
+            LatkyTopBrandHeader(
+                safetyScore = safetyScore,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp, vertical = 4.dp)
+            )
+
+            // Main Viewport Content
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -224,6 +237,14 @@ fun SubstanceApp(
                                     )
                                 }
                             },
+                            onUpdateStyleCustomization = { accentHex, cornerRadiusDp ->
+                                scope.launch {
+                                    repository.settingsStore.updateVisualTheme(
+                                        primaryAccentHex = accentHex,
+                                        cardCornerRadiusDp = cornerRadiusDp
+                                    )
+                                }
+                            },
                             onUpdateGlobalMathConstants = { tolGain, tolDecay, superpos, onsetR, comeupR, peakR, offsetR, redoseH, breachP, redlineP, bodyMult ->
                                 scope.launch {
                                     repository.settingsStore.updateCalculationConstants(
@@ -301,7 +322,7 @@ fun SubstanceApp(
                 }
             }
 
-            // Compact Floating Bottom Navigation Bar (Adapts to Light Mode & Lightweight Mode)
+            // Matte OLED Bottom Navigation Bar matching reference screenshots
             FrostedBottomNavBar(
                 currentTabIndex = currentTabIndex,
                 onSelectTab = { currentTabIndex = it }
@@ -316,72 +337,92 @@ private fun FrostedBottomNavBar(
     onSelectTab: (Int) -> Unit
 ) {
     val glass = LocalSubstanceGlass.current
-    val barShape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+    val navBg = if (glass.isLightMode) Color(0xFFFFFFFF) else Color(0xFF07090D)
 
-    val bgModifier = if (glass.isLightweightMode) {
-        Modifier.background(glass.cardSurfaceBase)
-    } else {
-        Modifier.background(
-            Brush.verticalGradient(
-                colors = listOf(
-                    glass.cardSurfaceBase.copy(alpha = 0.96f),
-                    glass.canvasBackgroundBottom.copy(alpha = 0.99f)
-                )
-            )
-        )
-    }
-
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(barShape)
-            .then(bgModifier)
-            .border(
-                width = 1.dp,
-                color = glass.cardBorderBase,
-                shape = barShape
-            )
+            .background(navBg)
             .windowInsetsPadding(WindowInsets.navigationBars)
-            .height(56.dp)
-            .padding(horizontal = 8.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly,
-        verticalAlignment = Alignment.CenterVertically
     ) {
-        SubstanceTab.entries.forEachIndexed { idx, tab ->
-            val selected = idx == currentTabIndex
-            val isCenterLogTab = tab == SubstanceTab.LOG_DOSE
-            val activeColor = if (isCenterLogTab) Color(0xFF10B981) else Color(0xFF06B6D4)
+        // Subtle 1dp top divider line (#181B24)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(glass.cardBorderBase)
+        )
 
-            val pillShape = RoundedCornerShape(14.dp)
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(pillShape)
-                    .background(
-                        if (selected) activeColor.copy(alpha = if (glass.isLightMode) 0.14f else 0.18f)
-                        else Color.Transparent
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(58.dp)
+                .padding(horizontal = 6.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            SubstanceTab.entries.forEachIndexed { idx, tab ->
+                val selected = idx == currentTabIndex
+                val isAddTab = tab == SubstanceTab.LOG_DOSE
+                val activeAccent = glass.primaryAccent
+                val pillShape = RoundedCornerShape(14.dp)
+
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(pillShape)
+                        .clickable { onSelectTab(idx) }
+                        .padding(vertical = 5.dp)
+                        .testTag(tab.tag),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    if (isAddTab) {
+                        // Signature Emerald Green (+) circle button matching reference screenshots
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    if (selected) Color(0xFF10B981)
+                                    else Color(0xFF10B981).copy(alpha = 0.22f)
+                                )
+                                .border(
+                                    width = 1.2.dp,
+                                    color = Color(0xFF10B981),
+                                    shape = CircleShape
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = tab.icon,
+                                contentDescription = tab.label,
+                                tint = if (selected) Color(0xFF042F2E) else Color(0xFF10B981),
+                                modifier = Modifier.size(15.dp)
+                            )
+                        }
+                    } else {
+                        Icon(
+                            imageVector = tab.icon,
+                            contentDescription = tab.label,
+                            tint = if (selected) activeAccent else glass.textSecondary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Text(
+                        text = tab.label,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontSize = 10.sp,
+                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+                        ),
+                        color = when {
+                            isAddTab && selected -> Color(0xFF10B981)
+                            selected -> activeAccent
+                            else -> glass.textSecondary
+                        },
+                        maxLines = 1
                     )
-                    .clickable { onSelectTab(idx) }
-                    .padding(vertical = 5.dp)
-                    .testTag(tab.tag),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Icon(
-                    imageVector = tab.icon,
-                    contentDescription = tab.label,
-                    tint = if (selected) activeColor else glass.textSecondary,
-                    modifier = Modifier.size(if (isCenterLogTab) 22.dp else 19.dp)
-                )
-                Text(
-                    text = tab.label,
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontSize = 9.5.sp,
-                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
-                    ),
-                    color = if (selected) glass.textPrimary else glass.textSecondary,
-                    maxLines = 1
-                )
+                }
             }
         }
     }

@@ -10,6 +10,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -24,11 +25,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.History
@@ -36,7 +38,6 @@ import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Timeline
-import androidx.compose.material.icons.filled.Undo
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -46,6 +47,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -66,7 +68,9 @@ import com.antigravity.substance.domain.model.PkPhase
 import com.antigravity.substance.ui.theme.BentoMicroHeader
 import com.antigravity.substance.ui.theme.DynamicAmbientGlowBox
 import com.antigravity.substance.ui.theme.FrostedBentoCard
+import com.antigravity.substance.ui.theme.LatkyPhaseProgressStrip
 import com.antigravity.substance.ui.theme.LocalSubstanceGlass
+import com.antigravity.substance.ui.theme.RobotoMonoFontFamily
 import com.antigravity.substance.ui.theme.SquircleIconBadge
 import com.antigravity.substance.ui.theme.SubstanceIcons
 import com.antigravity.substance.ui.theme.TierBadgePill
@@ -78,7 +82,8 @@ import kotlin.math.max
 /**
  * SCREEN 1: ZERO-SCROLL FULL-VIEWPORT DASHBOARD COCKPIT
  * Fits 100% inside the device viewport above the bottom nav bar using proportional
- * Modifier.weight(...) Bento Grid rows (0.13f + 0.42f + 0.24f + 0.21f = 1.00f).
+ * Modifier.weight(...) Bento Grid rows (0.12f + 0.40f + 0.28f + 0.20f = 1.00f),
+ * with internal weighted items so cards have zero dead space.
  */
 @Composable
 fun DashboardScreen(
@@ -106,21 +111,21 @@ fun DashboardScreen(
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 10.dp, vertical = 6.dp)
+                .padding(horizontal = 8.dp, vertical = 4.dp)
         ) {
             Column(
                 modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(7.dp)
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                // ROW 1 (Weight 0.13f): Live Bio-Load Header & Quick Telemetry Bar
+                // ROW 1 (Weight 0.12f): Live Bio-Load Header & Quick Telemetry Bar
                 TopBioLoadHeaderRow(
                     state = state,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(0.13f)
+                        .weight(0.12f)
                 )
 
-                // ROW 2 (Weight 0.42f): Hero Centerpiece — Live Active Substances & Stacked PK Monitor
+                // ROW 2 (Weight 0.40f): Hero Centerpiece — Live Active Substances & Stacked PK Monitor
                 HeroActivePkMonitorCard(
                     state = state,
                     onSelectTab = onSelectSessionTab,
@@ -128,21 +133,21 @@ fun DashboardScreen(
                     onQuickAddDose = { onNavigateToLogDose(selectedSession?.substance?.id) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(0.42f)
+                        .weight(0.40f)
                 )
 
-                // ROW 3 (Weight 0.24f): Middle Bento Row — Time Since Last Use & Today's Consumption/Cost Flip Card
+                // ROW 3 (Weight 0.28f): Middle Bento Row — Time Since Last Use & Today's Consumption/Cost Flip Card
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(0.24f),
-                    horizontalArrangement = Arrangement.spacedBy(7.dp)
+                        .weight(0.28f),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     TimeSinceLastUseBentoCard(
                         state = state,
                         onCyclePage = onCycleFavoritesPage,
                         modifier = Modifier
-                            .weight(0.54f)
+                            .weight(0.53f)
                             .fillMaxHeight()
                     )
 
@@ -150,12 +155,12 @@ fun DashboardScreen(
                         state = state,
                         onFlipCard = onFlipConsumptionCard,
                         modifier = Modifier
-                            .weight(0.46f)
+                            .weight(0.47f)
                             .fillMaxHeight()
                     )
                 }
 
-                // ROW 4 (Weight 0.21f): Bottom Bento Row — 24h Circadian Timeline, Sleep Readiness & 1-Tap Quick-Log Dock
+                // ROW 4 (Weight 0.20f): Bottom Bento Row — 24h Circadian Timeline, Sleep Readiness & 1-Tap Quick-Log Dock
                 BottomCircadianAndQuickDockCard(
                     state = state,
                     onQuickLogPreset = onQuickLogPreset,
@@ -163,7 +168,7 @@ fun DashboardScreen(
                     onOpenCustomLogger = { onNavigateToLogDose(null) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(0.21f)
+                        .weight(0.20f)
                 )
             }
         }
@@ -183,15 +188,15 @@ private fun TopBioLoadHeaderRow(
         Row(
             modifier = Modifier.fillMaxSize(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // Left: Animated Bio-Load Ring + Cockpit Title
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(0.36f)
+                modifier = Modifier.weight(0.35f)
             ) {
                 Box(
-                    modifier = Modifier.size(38.dp),
+                    modifier = Modifier.size(48.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     val ringColor = if (state.highestActiveTier == DoseTier.INACTIVE) {
@@ -200,7 +205,7 @@ private fun TopBioLoadHeaderRow(
                         state.highestActiveTier.primaryColor
                     }
                     Canvas(modifier = Modifier.fillMaxSize()) {
-                        val stroke = 4.dp.toPx()
+                        val stroke = 4.8.dp.toPx()
                         drawArc(
                             color = Color.White.copy(alpha = 0.10f),
                             startAngle = -90f,
@@ -219,7 +224,8 @@ private fun TopBioLoadHeaderRow(
                     Text(
                         text = "${(state.totalBioLoadFraction * 100).toInt()}%",
                         style = MaterialTheme.typography.labelSmall.copy(
-                            fontSize = 9.sp,
+                            fontFamily = RobotoMonoFontFamily,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         ),
                         color = Color.White
@@ -230,8 +236,9 @@ private fun TopBioLoadHeaderRow(
                     Text(
                         text = "BIO-COCKPIT",
                         style = MaterialTheme.typography.labelSmall.copy(
-                            fontSize = 9.sp,
+                            fontSize = 9.5.sp,
                             letterSpacing = 0.8.sp,
+                            fontWeight = FontWeight.Bold,
                             color = Color(0xFF38BDF8)
                         ),
                         maxLines = 1
@@ -239,7 +246,7 @@ private fun TopBioLoadHeaderRow(
                     Text(
                         text = SimpleDateFormat("EEE, d MMM", Locale.US).format(Date(state.nowMillis)),
                         style = MaterialTheme.typography.titleMedium.copy(
-                            fontSize = 13.sp,
+                            fontSize = 14.sp,
                             fontWeight = FontWeight.Bold
                         ),
                         color = Color.White,
@@ -248,35 +255,40 @@ private fun TopBioLoadHeaderRow(
                 }
             }
 
-            // Right: 3 Compact Telemetry Micro-Pills
+            // Right: 3 Full-Height Telemetry Boxes
             Row(
-                modifier = Modifier.weight(0.64f),
-                horizontalArrangement = Arrangement.spacedBy(5.dp),
+                modifier = Modifier
+                    .weight(0.65f)
+                    .fillMaxHeight(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Pill 1: Today's Spend
                 MicroTelemetryPill(
                     label = "SPEND",
                     value = state.settings.formatCurrency(state.todayTotalSpend),
                     subValue = if (state.spendVs7dAvgPercent >= 0) "+${state.spendVs7dAvgPercent}% vs 7d" else "${state.spendVs7dAvgPercent}% vs 7d",
                     accentColor = Color(0xFF06B6D4),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
                 )
-                // Pill 2: Today's Doses
                 MicroTelemetryPill(
                     label = "DOSES",
                     value = "${state.todayDosesCount} logs",
                     subValue = "${state.todayDistinctSubstancesCount} active",
                     accentColor = Color(0xFF10B981),
-                    modifier = Modifier.weight(0.9f)
+                    modifier = Modifier
+                        .weight(0.92f)
+                        .fillMaxHeight()
                 )
-                // Pill 3: Safety Status Badge
                 MicroTelemetryPill(
                     label = "STATUS",
                     value = if (state.safetyStatusLabel == "LIMIT EXCEEDED") "REDLINE" else state.safetyStatusLabel,
                     subValue = state.highestActiveTier.titleEn,
                     accentColor = state.safetyStatusTier.primaryColor,
-                    modifier = Modifier.weight(0.95f)
+                    modifier = Modifier
+                        .weight(0.98f)
+                        .fillMaxHeight()
                 )
             }
         }
@@ -291,31 +303,43 @@ private fun MicroTelemetryPill(
     accentColor: Color,
     modifier: Modifier = Modifier
 ) {
-    val shape = RoundedCornerShape(11.dp)
+    val shape = RoundedCornerShape(12.dp)
     Column(
         modifier = modifier
             .clip(shape)
-            .background(Color.White.copy(alpha = 0.04f))
-            .border(0.8.dp, accentColor.copy(alpha = 0.30f), shape)
-            .padding(horizontal = 6.dp, vertical = 4.dp),
-        verticalArrangement = Arrangement.Center
+            .background(Color.White.copy(alpha = 0.045f))
+            .border(1.dp, accentColor.copy(alpha = 0.35f), shape)
+            .padding(horizontal = 8.dp, vertical = 5.dp),
+        verticalArrangement = Arrangement.SpaceEvenly
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontFamily = RobotoMonoFontFamily,
+                fontSize = 9.sp,
+                fontWeight = FontWeight.SemiBold
+            ),
             color = Color(0xFF94A3B8),
             maxLines = 1
         )
         Text(
             text = value,
-            style = MaterialTheme.typography.labelLarge.copy(fontSize = 10.5.sp),
+            style = MaterialTheme.typography.labelLarge.copy(
+                fontFamily = RobotoMonoFontFamily,
+                fontSize = 12.5.sp,
+                fontWeight = FontWeight.Bold
+            ),
             color = Color.White,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
         Text(
             text = subValue,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontFamily = RobotoMonoFontFamily,
+                fontSize = 9.5.sp,
+                fontWeight = FontWeight.Medium
+            ),
             color = accentColor,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
@@ -338,13 +362,12 @@ private fun HeroActivePkMonitorCard(
 
     FrostedBentoCard(
         modifier = modifier.testTag("dashboard_hero_pk_card"),
-        cornerRadius = 22.dp,
+        cornerRadius = 20.dp,
         accentColor = accentColor,
-        contentPadding = PaddingValues(10.dp),
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
         onClick = onCycleHeroMode
     ) {
         if (sessions.isEmpty() || activeSession == null) {
-            // Clean empty state with 1-tap launch into Log Dose
             Column(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.Center,
@@ -354,31 +377,31 @@ private fun HeroActivePkMonitorCard(
                     imageVector = Icons.Default.Timeline,
                     contentDescription = null,
                     tint = Color(0xFF38BDF8),
-                    modifier = Modifier.size(28.dp)
+                    modifier = Modifier.size(32.dp)
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = "Zero Active Pharmacokinetic Load",
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleMedium.copy(fontSize = 15.sp, fontWeight = FontWeight.Bold),
                     color = Color.White
                 )
                 Text(
                     text = "All plasma levels cleared to baseline • Tap below to log intake",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 12.sp),
                     color = Color(0xFF94A3B8)
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(10.dp))
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(50))
                         .background(Color(0xFF06B6D4).copy(alpha = 0.22f))
                         .border(1.dp, Color(0xFF06B6D4), RoundedCornerShape(50))
                         .clickable(onClick = onQuickAddDose)
-                        .padding(horizontal = 14.dp, vertical = 6.dp)
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
                     Text(
                         text = "+ Log First Dose",
-                        style = MaterialTheme.typography.labelLarge,
+                        style = MaterialTheme.typography.labelLarge.copy(fontSize = 12.5.sp),
                         color = Color(0xFF38BDF8)
                     )
                 }
@@ -386,17 +409,20 @@ private fun HeroActivePkMonitorCard(
         } else {
             Column(
                 modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.SpaceBetween
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Top Strip: Active Substance Pill Switcher + Mode Toggle
+                // Top Strip: Horizontally Scrollable Active Substance Pill Switcher + Tier Badge
+                val glass = LocalSubstanceGlass.current
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Row(
-                        modifier = Modifier.weight(1f),
-                        horizontalArrangement = Arrangement.spacedBy(5.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         sessions.forEachIndexed { idx, sess ->
@@ -407,40 +433,45 @@ private fun HeroActivePkMonitorCard(
                                 modifier = Modifier
                                     .clip(pillShape)
                                     .background(
-                                        if (selected) subColor.copy(alpha = 0.25f)
-                                        else Color.White.copy(alpha = 0.05f)
+                                        if (selected) glass.pillSurfaceActive
+                                        else glass.pillSurfaceInactive
                                     )
                                     .border(
-                                        width = 1.dp,
-                                        color = if (selected) subColor else Color.White.copy(alpha = 0.12f),
+                                        width = if (selected) 1.4.dp else 1.dp,
+                                        color = if (selected) glass.pillBorderActive else glass.pillBorderInactive,
                                         shape = pillShape
                                     )
                                     .clickable { onSelectTab(idx) }
-                                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                                    .padding(horizontal = 12.dp, vertical = 6.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
                                     imageVector = SubstanceIcons.iconForName(sess.substance.iconName),
                                     contentDescription = null,
                                     tint = subColor,
-                                    modifier = Modifier.size(12.dp)
+                                    modifier = Modifier.size(14.dp)
                                 )
-                                Spacer(modifier = Modifier.width(4.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     text = sess.substance.name,
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontSize = 10.sp,
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontSize = 12.sp,
                                         fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
                                     ),
-                                    color = Color.White,
+                                    color = if (selected) glass.textPrimary else glass.textSecondary,
                                     maxLines = 1
                                 )
                                 if (sess.activeLogs.size > 1) {
-                                    Spacer(modifier = Modifier.width(3.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
                                     Text(
                                         text = "${sess.activeLogs.size}x",
-                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                                        color = subColor
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            fontFamily = RobotoMonoFontFamily,
+                                            fontSize = 10.5.sp,
+                                            fontWeight = FontWeight.Bold
+                                        ),
+                                        color = subColor,
+                                        maxLines = 1
                                     )
                                 }
                             }
@@ -452,32 +483,33 @@ private fun HeroActivePkMonitorCard(
                                 modifier = Modifier
                                     .clip(pillShape)
                                     .background(
-                                        if (isAllStackedComposite) Color(0xFF8B5CF6).copy(alpha = 0.28f)
-                                        else Color.White.copy(alpha = 0.05f)
+                                        if (isAllStackedComposite) glass.pillSurfaceActive
+                                        else glass.pillSurfaceInactive
                                     )
                                     .border(
-                                        width = 1.dp,
-                                        color = if (isAllStackedComposite) Color(0xFF8B5CF6) else Color.White.copy(alpha = 0.12f),
+                                        width = if (isAllStackedComposite) 1.4.dp else 1.dp,
+                                        color = if (isAllStackedComposite) glass.pillBorderActive else glass.pillBorderInactive,
                                         shape = pillShape
                                     )
                                     .clickable { onSelectTab(sessions.size) }
-                                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                                    .padding(horizontal = 12.dp, vertical = 6.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Layers,
                                     contentDescription = null,
-                                    tint = Color(0xFFC084FC),
-                                    modifier = Modifier.size(11.dp)
+                                    tint = glass.primaryAccent,
+                                    modifier = Modifier.size(13.dp)
                                 )
-                                Spacer(modifier = Modifier.width(3.dp))
+                                Spacer(modifier = Modifier.width(5.dp))
                                 Text(
-                                    text = "ALL STACKED",
+                                    text = "Všechny aktivní",
                                     style = MaterialTheme.typography.labelSmall.copy(
-                                        fontSize = 9.5.sp,
+                                        fontSize = 11.5.sp,
                                         fontWeight = FontWeight.Bold
                                     ),
-                                    color = Color.White
+                                    color = if (isAllStackedComposite) glass.textPrimary else glass.textSecondary,
+                                    maxLines = 1
                                 )
                             }
                         }
@@ -485,16 +517,15 @@ private fun HeroActivePkMonitorCard(
 
                     TierBadgePill(
                         tier = activeSession.currentTier,
-                        compact = true
+                        compact = false
                     )
                 }
 
-                // Center Area: Either Live Multi-Dose Superposition Curve OR Stacked Dose Breakdown Matrix
+                // Center Area: Full-Height Live Multi-Dose Superposition Curve OR Stacked Dose Breakdown Matrix
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
-                        .padding(vertical = 4.dp)
                 ) {
                     if (state.heroCardDisplayMode == 0) {
                         LiveSuperpositionCurveCanvas(
@@ -535,7 +566,7 @@ private fun LiveSuperpositionCurveCanvas(
     } else {
         val infiniteTransition = rememberInfiniteTransition(label = "orbPulse")
         val animated by infiniteTransition.animateFloat(
-            initialValue = 0.7f,
+            initialValue = 0.75f,
             targetValue = 1.35f,
             animationSpec = infiniteRepeatable(
                 animation = tween(1100, easing = FastOutSlowInEasing),
@@ -551,17 +582,21 @@ private fun LiveSuperpositionCurveCanvas(
     val points = session.curvePoints
 
     Box(modifier = modifier) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
+        Canvas(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 16.dp)
+        ) {
             val w = size.width
             val h = size.height
             if (w <= 10f || h <= 10f || points.size < 2) return@Canvas
 
             val maxScaleY = max(
-                sub.thresholdStrong * 1.18,
-                session.combinedPeakLoad * 1.15
+                sub.thresholdStrong * 1.15,
+                session.combinedPeakLoad * 1.12
             ).coerceAtLeast(1.0)
 
-            // 1. Horizontal threshold zone bands (Light, Medium, Strong, Redline)
+            // 1. Horizontal threshold zone bands (Light, Medium, Strong)
             val thresholds = listOf(
                 sub.thresholdLight to DoseTier.LIGHT.primaryColor,
                 sub.thresholdMedium to DoseTier.MEDIUM.primaryColor,
@@ -570,10 +605,10 @@ private fun LiveSuperpositionCurveCanvas(
             thresholds.forEach { (thVal, thCol) ->
                 val y = (h - (thVal / maxScaleY).toFloat() * h).coerceIn(0f, h)
                 drawLine(
-                    color = thCol.copy(alpha = 0.22f),
+                    color = thCol.copy(alpha = 0.25f),
                     start = Offset(0f, y),
                     end = Offset(w, y),
-                    strokeWidth = 1.dp.toPx(),
+                    strokeWidth = 1.1.dp.toPx(),
                     pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 6f))
                 )
             }
@@ -589,10 +624,10 @@ private fun LiveSuperpositionCurveCanvas(
             // 2. Vertical NOW cursor line (at relMins = 0f -> 20% from left)
             val nowX = xForRelMins(0f)
             drawLine(
-                color = Color.White.copy(alpha = 0.30f),
+                color = Color.White.copy(alpha = 0.35f),
                 start = Offset(nowX, 0f),
                 end = Offset(nowX, h),
-                strokeWidth = 1.2.dp.toPx(),
+                strokeWidth = 1.4.dp.toPx(),
                 pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f))
             )
 
@@ -603,50 +638,49 @@ private fun LiveSuperpositionCurveCanvas(
                 if (relM in minRel..maxRel) {
                     val dx = xForRelMins(relM)
                     drawLine(
-                        color = primaryColor.copy(alpha = 0.45f),
-                        start = Offset(dx, h * 0.15f),
+                        color = primaryColor.copy(alpha = 0.50f),
+                        start = Offset(dx, h * 0.12f),
                         end = Offset(dx, h),
-                        strokeWidth = 1.dp.toPx(),
+                        strokeWidth = 1.2.dp.toPx(),
                         pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 4f))
                     )
                     drawCircle(
                         color = primaryColor,
-                        radius = 3.dp.toPx(),
-                        center = Offset(dx, h - 3.dp.toPx())
+                        radius = 3.8.dp.toPx(),
+                        center = Offset(dx, h - 3.8.dp.toPx())
                     )
                 }
             }
 
             if (isCompositeMode) {
-                // Draw all active sessions normalized
                 allSessions.forEach { s ->
                     val sColor = Color(s.substance.colorHex)
-                    val sMax = max(s.substance.thresholdStrong * 1.15, s.combinedPeakLoad * 1.15).coerceAtLeast(1.0)
+                    val sMax = max(s.substance.thresholdStrong * 1.12, s.combinedPeakLoad * 1.12).coerceAtLeast(1.0)
                     val path = Path()
                     s.curvePoints.forEachIndexed { idx, pt ->
                         val px = xForRelMins(pt.relativeMinutesFromNow)
-                        val py = (h - (pt.activeEffectLoad / sMax).toFloat() * (h * 0.88f)).coerceIn(2f, h)
+                        val py = (h - (pt.activeEffectLoad / sMax).toFloat() * (h * 0.92f)).coerceIn(2f, h)
                         if (idx == 0) path.moveTo(px, py) else path.lineTo(px, py)
                     }
                     drawPath(
                         path = path,
                         color = sColor,
-                        style = Stroke(width = 2.4.dp.toPx(), cap = StrokeCap.Round)
+                        style = Stroke(width = 2.8.dp.toPx(), cap = StrokeCap.Round)
                     )
                 }
             } else {
-                // 4. Residual Plasma Half-Life Curve (subtle dashed background wave)
+                // 4. Residual Plasma Half-Life Curve
                 val plasmaPath = Path()
                 points.forEachIndexed { idx, pt ->
                     val px = xForRelMins(pt.relativeMinutesFromNow)
-                    val py = (h - (pt.plasmaConcentration / maxScaleY).toFloat() * (h * 0.88f)).coerceIn(2f, h)
+                    val py = (h - (pt.plasmaConcentration / maxScaleY).toFloat() * (h * 0.92f)).coerceIn(2f, h)
                     if (idx == 0) plasmaPath.moveTo(px, py) else plasmaPath.lineTo(px, py)
                 }
                 drawPath(
                     path = plasmaPath,
-                    color = primaryColor.copy(alpha = 0.35f),
+                    color = primaryColor.copy(alpha = 0.40f),
                     style = Stroke(
-                        width = 1.4.dp.toPx(),
+                        width = 1.6.dp.toPx(),
                         cap = StrokeCap.Round,
                         pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 5f))
                     )
@@ -657,7 +691,7 @@ private fun LiveSuperpositionCurveCanvas(
                 val fillPath = Path()
                 points.forEachIndexed { idx, pt ->
                     val px = xForRelMins(pt.relativeMinutesFromNow)
-                    val py = (h - (pt.activeEffectLoad / maxScaleY).toFloat() * (h * 0.88f)).coerceIn(2f, h)
+                    val py = (h - (pt.activeEffectLoad / maxScaleY).toFloat() * (h * 0.92f)).coerceIn(2f, h)
                     if (idx == 0) {
                         effectPath.moveTo(px, py)
                         fillPath.moveTo(px, h)
@@ -676,8 +710,8 @@ private fun LiveSuperpositionCurveCanvas(
                     path = fillPath,
                     brush = Brush.verticalGradient(
                         colors = listOf(
-                            primaryColor.copy(alpha = 0.40f),
-                            session.currentTier.primaryColor.copy(alpha = 0.14f),
+                            primaryColor.copy(alpha = 0.42f),
+                            session.currentTier.primaryColor.copy(alpha = 0.16f),
                             Color.Transparent
                         )
                     )
@@ -689,44 +723,44 @@ private fun LiveSuperpositionCurveCanvas(
                         colors = listOf(
                             primaryColor,
                             session.combinedPeakTier.primaryColor,
-                            primaryColor.copy(alpha = 0.7f)
+                            primaryColor.copy(alpha = 0.75f)
                         )
                     ),
-                    style = Stroke(width = 2.8.dp.toPx(), cap = StrokeCap.Round)
+                    style = Stroke(width = 3.2.dp.toPx(), cap = StrokeCap.Round)
                 )
 
                 // 6. Highlighted Combined Shifted Peak Marker
                 val peakRelMins = (session.combinedPeakTimestampMillis - nowMs) / 60_000f
                 if (peakRelMins in minRel..maxRel) {
                     val peakX = xForRelMins(peakRelMins)
-                    val peakY = (h - (session.combinedPeakLoad / maxScaleY).toFloat() * (h * 0.88f)).coerceIn(4f, h - 4f)
+                    val peakY = (h - (session.combinedPeakLoad / maxScaleY).toFloat() * (h * 0.92f)).coerceIn(4f, h - 4f)
                     drawCircle(
-                        color = session.combinedPeakTier.primaryColor.copy(alpha = 0.35f),
-                        radius = 7.dp.toPx(),
+                        color = session.combinedPeakTier.primaryColor.copy(alpha = 0.38f),
+                        radius = 8.dp.toPx(),
                         center = Offset(peakX, peakY)
                     )
                     drawCircle(
                         color = Color.White,
-                        radius = 3.2.dp.toPx(),
+                        radius = 3.8.dp.toPx(),
                         center = Offset(peakX, peakY)
                     )
                 }
 
                 // 7. Glowing Pulsing Orb at exact NOW position on the curve
-                val nowY = (h - (session.currentActiveLoad / maxScaleY).toFloat() * (h * 0.88f)).coerceIn(4f, h - 4f)
+                val nowY = (h - (session.currentActiveLoad / maxScaleY).toFloat() * (h * 0.92f)).coerceIn(4f, h - 4f)
                 drawCircle(
-                    color = primaryColor.copy(alpha = 0.38f),
-                    radius = 9.dp.toPx() * orbPulse,
+                    color = primaryColor.copy(alpha = 0.40f),
+                    radius = 10.5.dp.toPx() * orbPulse,
                     center = Offset(nowX, nowY)
                 )
                 drawCircle(
                     color = primaryColor,
-                    radius = 4.5.dp.toPx(),
+                    radius = 5.2.dp.toPx(),
                     center = Offset(nowX, nowY)
                 )
                 drawCircle(
                     color = Color.White,
-                    radius = 2.dp.toPx(),
+                    radius = 2.4.dp.toPx(),
                     center = Offset(nowX, nowY)
                 )
             }
@@ -737,34 +771,43 @@ private fun LiveSuperpositionCurveCanvas(
         Row(
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(4.dp),
+                .padding(top = 2.dp, end = 2.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             if (session.activeLogs.size > 1 && session.peakShiftMinutes > 0) {
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
+                        .clip(RoundedCornerShape(8.dp))
                         .background(Color(0xFFF59E0B).copy(alpha = 0.18f))
-                        .border(0.8.dp, Color(0xFFF59E0B).copy(alpha = 0.5f), RoundedCornerShape(6.dp))
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                        .border(1.dp, Color(0xFFF59E0B).copy(alpha = 0.55f), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 8.dp, vertical = 3.5.dp)
                 ) {
                     Text(
                         text = "STACKED PEAK SHIFT +${session.peakShiftMinutes}m (${timeFmt.format(Date(session.combinedPeakTimestampMillis))})",
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp),
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontFamily = RobotoMonoFontFamily,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
                         color = Color(0xFFFBBF24)
                     )
                 }
             } else {
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(Color.Black.copy(alpha = 0.45f))
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.Black.copy(alpha = 0.55f))
+                        .border(0.8.dp, glass.cardBorderBase, RoundedCornerShape(8.dp))
+                        .padding(horizontal = 8.dp, vertical = 3.5.dp)
                 ) {
                     Text(
                         text = "Peak ${session.substance.defaultUnit}: ${String.format(Locale.US, "%.1f", session.combinedPeakLoad)} @ ${timeFmt.format(Date(session.combinedPeakTimestampMillis))}",
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp),
-                        color = Color(0xFFCBD5E1)
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontFamily = RobotoMonoFontFamily,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.SemiBold
+                        ),
+                        color = Color(0xFFE2E8F0)
                     )
                 }
             }
@@ -778,11 +821,11 @@ private fun LiveSuperpositionCurveCanvas(
                 .padding(horizontal = 2.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text("-2h", style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp), color = Color(0xFF64748B))
-            Text("NOW", style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp, fontWeight = FontWeight.Bold), color = primaryColor)
-            Text("+2h", style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp), color = Color(0xFF64748B))
-            Text("+5h", style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp), color = Color(0xFF64748B))
-            Text("+8h", style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp), color = Color(0xFF64748B))
+            Text("-2h", style = MaterialTheme.typography.labelSmall.copy(fontFamily = RobotoMonoFontFamily, fontSize = 9.5.sp), color = Color(0xFF94A3B8))
+            Text("NOW", style = MaterialTheme.typography.labelSmall.copy(fontFamily = RobotoMonoFontFamily, fontSize = 10.sp, fontWeight = FontWeight.Bold), color = primaryColor)
+            Text("+2h", style = MaterialTheme.typography.labelSmall.copy(fontFamily = RobotoMonoFontFamily, fontSize = 9.5.sp), color = Color(0xFF94A3B8))
+            Text("+5h", style = MaterialTheme.typography.labelSmall.copy(fontFamily = RobotoMonoFontFamily, fontSize = 9.5.sp), color = Color(0xFF94A3B8))
+            Text("+8h", style = MaterialTheme.typography.labelSmall.copy(fontFamily = RobotoMonoFontFamily, fontSize = 9.5.sp), color = Color(0xFF94A3B8))
         }
     }
 }
@@ -798,9 +841,9 @@ private fun ActiveSessionDoseBreakdownView(
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(Color.White.copy(alpha = 0.03f))
-            .padding(8.dp),
-        verticalArrangement = Arrangement.SpaceBetween
+            .background(Color.White.copy(alpha = 0.035f))
+            .padding(10.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -810,37 +853,47 @@ private fun ActiveSessionDoseBreakdownView(
             Text(
                 text = "SUPERPOSITION DOSE STACK (${session.activeLogs.size} OVERLAPPING)",
                 style = MaterialTheme.typography.labelSmall.copy(
-                    fontSize = 9.5.sp,
+                    fontSize = 10.5.sp,
                     color = Color(sub.colorHex),
                     fontWeight = FontWeight.Bold
                 )
             )
             Text(
                 text = "Tap card for PK Curve",
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp),
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.5.sp),
                 color = Color(0xFF94A3B8)
             )
         }
 
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            verticalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
             session.activeLogs.takeLast(3).forEachIndexed { i, log ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color.White.copy(alpha = 0.04f))
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                        .weight(1f)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color.White.copy(alpha = 0.045f))
+                        .padding(horizontal = 10.dp, vertical = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = "Dose #${i + 1} • ${timeFmt.format(Date(log.timestampMillis))} (${log.roaName})",
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.5.sp, fontWeight = FontWeight.Medium),
                         color = Color.White
                     )
                     Text(
                         text = "${settings.formatDose(log.doseAmount, log.unit)} (${settings.formatCurrency(log.cost)})",
-                        style = MaterialTheme.typography.labelLarge.copy(fontSize = 10.5.sp),
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            fontFamily = RobotoMonoFontFamily,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
                         color = Color(sub.colorHex)
                     )
                 }
@@ -853,12 +906,16 @@ private fun ActiveSessionDoseBreakdownView(
         ) {
             Text(
                 text = "Onset: ${sub.onsetMinutes}m • Comeup: ${sub.comeupMinutes}m • Peak: ${sub.peakMinutes}m",
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                 color = Color(0xFF94A3B8)
             )
             Text(
                 text = "t½ = ${sub.halfLifeHours}h",
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontFamily = RobotoMonoFontFamily,
+                    fontSize = 10.5.sp,
+                    fontWeight = FontWeight.Bold
+                ),
                 color = Color(0xFF38BDF8)
             )
         }
@@ -872,77 +929,25 @@ private fun LivePkTelemetryFooterStrip(
 ) {
     val sub = session.substance
     val timeFmt = SimpleDateFormat("HH:mm", Locale.US)
-    val countdownFormatted = formatCountdownHms(session.phaseCountdownSeconds)
+    val countdownMins = (session.phaseCountdownSeconds / 60).coerceAtLeast(1)
 
-    val phaseText = when (session.currentPhase) {
-        PkPhase.ONSET_COUNTDOWN -> "Onset starts in $countdownFormatted"
-        PkPhase.CLIMBING_TO_PEAK -> "Climbing • Peak in $countdownFormatted (${timeFmt.format(Date(session.phaseTargetTimestampMillis))})"
-        PkPhase.PEAKING_NOW -> "PEAKING NOW • $countdownFormatted left"
-        PkPhase.OFFSET_COMEDOWN -> "Comedown • Clear in $countdownFormatted (${timeFmt.format(Date(session.activeEffectsEndTimestampMillis))})"
-        PkPhase.RESIDUAL_HALF_LIFE -> "Plasma tail • Clear at ${timeFmt.format(Date(session.halfLifeClearTimestampMillis))}"
-        PkPhase.INACTIVE -> "Baseline"
+    val (phaseBadgeText, phaseBadgeColor, progressFrac) = when (session.currentPhase) {
+        PkPhase.ONSET_COUNTDOWN -> Triple("Nástup (Onset)", Color(0xFFF59E0B), 0.18f)
+        PkPhase.CLIMBING_TO_PEAK -> Triple("Náběh (Comeup)", Color(0xFFF59E0B), 0.42f)
+        PkPhase.PEAKING_NOW -> Triple("Vrchol (Peak)", Color(0xFF10B981), 0.65f)
+        PkPhase.OFFSET_COMEDOWN -> Triple("Doznívání (Offset)", Color(0xFF38BDF8), 0.82f)
+        PkPhase.RESIDUAL_HALF_LIFE -> Triple("V těle (t½)", Color(0xFF8B5CF6), 0.94f)
+        PkPhase.INACTIVE -> Triple("Čistý stav", Color(0xFF6B7280), 1.0f)
     }
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color.Black.copy(alpha = 0.35f))
-            .border(0.8.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(12.dp))
-            .padding(horizontal = 8.dp, vertical = 5.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        // Left: Active equivalent dose right now
-        Column(modifier = Modifier.weight(0.38f)) {
-            Text(
-                text = "ACTIVE EQUIVALENT LOAD",
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
-                color = Color(0xFF94A3B8),
-                maxLines = 1
-            )
-            Row(verticalAlignment = Alignment.Bottom) {
-                Text(
-                    text = "${String.format(Locale.US, "%.1f", session.currentActiveLoad)} ${sub.defaultUnit}",
-                    style = MaterialTheme.typography.labelLarge.copy(
-                        fontSize = 13.sp,
-                        color = Color(sub.colorHex)
-                    ),
-                    maxLines = 1
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = "/ ${settings.formatDose(session.totalIngestedTodayUnits, sub.defaultUnit)} today",
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp),
-                    color = Color(0xFF94A3B8),
-                    maxLines = 1
-                )
-            }
-        }
+    val rightStatus = "${String.format(Locale.US, "%.1f", session.currentActiveLoad)} ${sub.defaultUnit} • Konec za ${countdownMins}m (${timeFmt.format(Date(session.activeEffectsEndTimestampMillis))})"
 
-        // Right: Live Second-by-Second Phase Countdown & Half-Life Clear Time
-        Column(
-            modifier = Modifier.weight(0.62f),
-            horizontalAlignment = Alignment.End
-        ) {
-            Text(
-                text = phaseText,
-                style = MaterialTheme.typography.labelLarge.copy(
-                    fontSize = 10.5.sp,
-                    color = Color.White
-                ),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = "t½ Plasma clear @ ${timeFmt.format(Date(session.halfLifeClearTimestampMillis))} • Peak ${String.format(Locale.US, "%.1f", session.combinedPeakLoad)} ${sub.defaultUnit}",
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp),
-                color = Color(0xFF94A3B8),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-    }
+    LatkyPhaseProgressStrip(
+        phaseBadgeText = phaseBadgeText,
+        phaseColor = phaseBadgeColor,
+        rightStatusText = rightStatus,
+        progressFraction = progressFrac
+    )
 }
 
 @Composable
@@ -960,12 +965,12 @@ private fun TimeSinceLastUseBentoCard(
     FrostedBentoCard(
         modifier = modifier.testTag("dashboard_time_since_last_card"),
         cornerRadius = 18.dp,
-        contentPadding = PaddingValues(9.dp),
+        contentPadding = PaddingValues(10.dp),
         onClick = onCyclePage
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             BentoMicroHeader(
                 title = "TIME SINCE LAST",
@@ -975,38 +980,51 @@ private fun TimeSinceLastUseBentoCard(
             )
 
             Column(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
                 verticalArrangement = Arrangement.spacedBy(5.dp)
             ) {
                 visibleItems.forEach { item ->
                     val subColor = Color(item.substance.colorHex)
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Color.White.copy(alpha = 0.035f))
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.weight(0.52f)
+                            modifier = Modifier.weight(0.55f)
                         ) {
                             SquircleIconBadge(
                                 icon = SubstanceIcons.iconForName(item.substance.iconName),
                                 colorHex = item.substance.colorHex,
-                                size = 22.dp,
-                                iconSize = 12.dp
+                                size = 28.dp,
+                                iconSize = 15.dp
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Column {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column(verticalArrangement = Arrangement.Center) {
                                 Text(
                                     text = item.substance.name,
-                                    style = MaterialTheme.typography.titleMedium.copy(fontSize = 11.5.sp),
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontSize = 12.5.sp,
+                                        fontWeight = FontWeight.Bold
+                                    ),
                                     color = Color.White,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
                                     text = state.settings.formatDose(item.lastDoseAmount, item.substance.defaultUnit),
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp),
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontFamily = RobotoMonoFontFamily,
+                                        fontSize = 10.sp
+                                    ),
                                     color = Color(0xFF94A3B8),
                                     maxLines = 1
                                 )
@@ -1015,24 +1033,27 @@ private fun TimeSinceLastUseBentoCard(
 
                         Column(
                             horizontalAlignment = Alignment.End,
-                            modifier = Modifier.weight(0.48f)
+                            verticalArrangement = Arrangement.Center,
+                            modifier = Modifier.weight(0.45f)
                         ) {
                             Text(
                                 text = formatElapsedCompact(item.elapsedSeconds),
                                 style = MaterialTheme.typography.labelLarge.copy(
-                                    fontSize = 10.5.sp,
+                                    fontFamily = RobotoMonoFontFamily,
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.Bold,
                                     color = subColor
                                 ),
                                 maxLines = 1
                             )
-                            Spacer(modifier = Modifier.height(2.dp))
+                            Spacer(modifier = Modifier.height(4.dp))
                             // Recovery progress bar
                             Box(
                                 modifier = Modifier
-                                    .fillMaxWidth(0.85f)
-                                    .height(3.dp)
+                                    .fillMaxWidth(0.90f)
+                                    .height(5.dp)
                                     .clip(CircleShape)
-                                    .background(Color.White.copy(alpha = 0.08f))
+                                    .background(Color.White.copy(alpha = 0.09f))
                             ) {
                                 Box(
                                     modifier = Modifier
@@ -1060,12 +1081,12 @@ private fun TodayConsumptionFlipBentoCard(
     FrostedBentoCard(
         modifier = modifier.testTag("dashboard_today_consumption_card"),
         cornerRadius = 18.dp,
-        contentPadding = PaddingValues(9.dp),
+        contentPadding = PaddingValues(10.dp),
         onClick = onFlipCard
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             BentoMicroHeader(
                 title = if (state.showCostInsteadOfUnits) "TODAY COST" else "TODAY UNITS",
@@ -1078,19 +1099,29 @@ private fun TodayConsumptionFlipBentoCard(
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
                         text = "No doses logged today",
-                        style = MaterialTheme.typography.bodyMedium.copy(fontSize = 11.sp),
+                        style = MaterialTheme.typography.bodyMedium.copy(fontSize = 12.sp),
                         color = Color(0xFF64748B)
                     )
                 }
             } else {
                 Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
                     items.forEach { item ->
                         val subColor = Color(item.substance.colorHex)
                         val barColor = if (item.limitFraction > 1.0f) Color(0xFFEF4444) else subColor
-                        Column(modifier = Modifier.fillMaxWidth()) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(Color.White.copy(alpha = 0.035f))
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalArrangement = Arrangement.Center
+                        ) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1099,13 +1130,13 @@ private fun TodayConsumptionFlipBentoCard(
                                 Text(
                                     text = item.substance.name,
                                     style = MaterialTheme.typography.labelSmall.copy(
-                                        fontSize = 10.sp,
+                                        fontSize = 12.sp,
                                         color = Color.White,
-                                        fontWeight = FontWeight.SemiBold
+                                        fontWeight = FontWeight.Bold
                                     ),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.weight(0.45f)
+                                    modifier = Modifier.weight(0.48f)
                                 )
                                 Text(
                                     text = if (state.showCostInsteadOfUnits) {
@@ -1114,19 +1145,21 @@ private fun TodayConsumptionFlipBentoCard(
                                         "${state.settings.formatDose(item.todayTotalUnits)}/${state.settings.formatDose(item.dailySafeLimit, item.substance.defaultUnit)}"
                                     },
                                     style = MaterialTheme.typography.labelSmall.copy(
-                                        fontSize = 9.5.sp,
+                                        fontFamily = RobotoMonoFontFamily,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
                                         color = barColor
                                     ),
                                     maxLines = 1
                                 )
                             }
-                            Spacer(modifier = Modifier.height(3.dp))
+                            Spacer(modifier = Modifier.height(5.dp))
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(4.5.dp)
+                                    .height(6.dp)
                                     .clip(CircleShape)
-                                    .background(Color.White.copy(alpha = 0.08f))
+                                    .background(Color.White.copy(alpha = 0.09f))
                             ) {
                                 Box(
                                     modifier = Modifier
@@ -1154,13 +1187,13 @@ private fun BottomCircadianAndQuickDockCard(
     FrostedBentoCard(
         modifier = modifier.testTag("dashboard_bottom_dock_card"),
         cornerRadius = 18.dp,
-        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 7.dp)
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.spacedBy(5.dp)
         ) {
-            // Top half: 24-Hour Circadian Intake Timeline Strip + Sleep Readiness Indicator
+            // Top Row: 24-Hour Circadian Intake Timeline Header + Sleep Readiness Indicator
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -1171,16 +1204,17 @@ private fun BottomCircadianAndQuickDockCard(
                         imageVector = Icons.Default.Schedule,
                         contentDescription = null,
                         tint = Color(0xFF38BDF8),
-                        modifier = Modifier.size(12.dp)
+                        modifier = Modifier.size(14.dp)
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(5.dp))
                     Text(
                         text = "24H CIRCADIAN TIMELINE",
                         style = MaterialTheme.typography.labelSmall.copy(
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.5.sp
                         ),
-                        color = Color(0xFF94A3B8)
+                        color = Color(0xFFCBD5E1)
                     )
                 }
 
@@ -1190,77 +1224,106 @@ private fun BottomCircadianAndQuickDockCard(
                         imageVector = if (state.sleepReadinessOptimal) Icons.Default.CheckCircle else Icons.Default.Warning,
                         contentDescription = null,
                         tint = if (state.sleepReadinessOptimal) Color(0xFF10B981) else Color(0xFFF59E0B),
-                        modifier = Modifier.size(12.dp)
+                        modifier = Modifier.size(14.dp)
                     )
-                    Spacer(modifier = Modifier.width(3.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = if (state.sleepReadinessOptimal) {
                             "Sleep @ ${state.settings.bedtimeHour24}:00 Clear"
                         } else {
                             "${state.sleepWarningSubstanceName} active @ ${state.settings.bedtimeHour24}:00"
                         },
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontFamily = RobotoMonoFontFamily,
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.SemiBold
+                        ),
                         color = if (state.sleepReadinessOptimal) Color(0xFF10B981) else Color(0xFFFBBF24)
                     )
                 }
             }
 
-            // 24-Hour Timeline Bar with glowing dose gems & bedtime marker
-            Canvas(
+            // Middle: Full-Height 24-Hour Timeline Bar with glowing dose gems, bedtime marker & hour labels
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(14.dp)
+                    .weight(1f),
+                verticalArrangement = Arrangement.Center
             ) {
-                val w = size.width
-                val h = size.height
-                val midY = h / 2f
+                Canvas(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(18.dp)
+                ) {
+                    val w = size.width
+                    val h = size.height
+                    val midY = h / 2f
 
-                // Track bar
-                drawRoundRect(
-                    color = Color.White.copy(alpha = 0.07f),
-                    topLeft = Offset(0f, midY - 2.5.dp.toPx()),
-                    size = Size(w, 5.dp.toPx()),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(4.dp.toPx())
-                )
-
-                // Hour ticks (0, 6, 12, 18, 24)
-                listOf(0f, 0.25f, 0.5f, 0.75f, 1f).forEach { frac ->
-                    drawCircle(
-                        color = Color.White.copy(alpha = 0.22f),
-                        radius = 1.5.dp.toPx(),
-                        center = Offset(w * frac, midY)
+                    // Track bar
+                    drawRoundRect(
+                        color = Color.White.copy(alpha = 0.09f),
+                        topLeft = Offset(0f, midY - 3.5.dp.toPx()),
+                        size = Size(w, 7.dp.toPx()),
+                        cornerRadius = CornerRadius(4.dp.toPx())
                     )
+
+                    // Hour ticks (0, 6, 12, 18, 24)
+                    listOf(0f, 0.25f, 0.5f, 0.75f, 1f).forEach { frac ->
+                        drawCircle(
+                            color = Color.White.copy(alpha = 0.28f),
+                            radius = 2.dp.toPx(),
+                            center = Offset(w * frac, midY)
+                        )
+                    }
+
+                    // Bedtime marker
+                    val bedX = (state.settings.bedtimeHour24 / 24f).coerceIn(0f, 1f) * w
+                    drawLine(
+                        color = Color(0xFF8B5CF6),
+                        start = Offset(bedX, 0f),
+                        end = Offset(bedX, h),
+                        strokeWidth = 2.dp.toPx()
+                    )
+
+                    // Logged Gems
+                    state.todayTimelineGems.forEach { gem ->
+                        val gx = (gem.hourOfDayFraction * w).coerceIn(5f, w - 5f)
+                        val gColor = Color(gem.substance.colorHex)
+                        drawCircle(
+                            color = gColor.copy(alpha = 0.38f),
+                            radius = 7.5.dp.toPx(),
+                            center = Offset(gx, midY)
+                        )
+                        drawCircle(
+                            color = gColor,
+                            radius = 4.5.dp.toPx(),
+                            center = Offset(gx, midY)
+                        )
+                    }
                 }
 
-                // Bedtime marker
-                val bedX = (state.settings.bedtimeHour24 / 24f).coerceIn(0f, 1f) * w
-                drawLine(
-                    color = Color(0xFF8B5CF6),
-                    start = Offset(bedX, 0f),
-                    end = Offset(bedX, h),
-                    strokeWidth = 1.5.dp.toPx()
-                )
-
-                // Logged Gems
-                state.todayTimelineGems.forEach { gem ->
-                    val gx = (gem.hourOfDayFraction * w).coerceIn(4f, w - 4f)
-                    val gColor = Color(gem.substance.colorHex)
-                    drawCircle(
-                        color = gColor.copy(alpha = 0.35f),
-                        radius = 6.dp.toPx(),
-                        center = Offset(gx, midY)
-                    )
-                    drawCircle(
-                        color = gColor,
-                        radius = 3.5.dp.toPx(),
-                        center = Offset(gx, midY)
-                    )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    listOf("00h", "06h", "12h", "18h", "24h").forEach { hr ->
+                        Text(
+                            text = hr,
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontFamily = RobotoMonoFontFamily,
+                                fontSize = 8.5.sp
+                            ),
+                            color = Color(0xFF64748B)
+                        )
+                    }
                 }
             }
 
-            // Bottom half: 1-Tap Quick-Log Dock (or Undo confirmation strip)
+            // Bottom: Tall 1-Tap Quick-Log Dock (or Undo confirmation strip)
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(36.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -1268,32 +1331,36 @@ private fun BottomCircadianAndQuickDockCard(
                     Row(
                         modifier = Modifier
                             .weight(1f)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(Color(0xFF10B981).copy(alpha = 0.18f))
-                            .border(1.dp, Color(0xFF10B981).copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+                            .fillMaxHeight()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFF10B981).copy(alpha = 0.20f))
+                            .border(1.dp, Color(0xFF10B981).copy(alpha = 0.6f), RoundedCornerShape(12.dp))
                             .clickable(onClick = onUndoQuickLog)
-                            .padding(horizontal = 8.dp, vertical = 5.dp),
+                            .padding(horizontal = 12.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
                             text = "Logged ${state.lastQuickLoggedLabel} • PK Stack Updated",
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.5.sp),
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.SemiBold
+                            ),
                             color = Color.White,
                             maxLines = 1
                         )
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
-                                imageVector = Icons.Default.Undo,
+                                imageVector = Icons.AutoMirrored.Filled.Undo,
                                 contentDescription = "Undo quick log",
                                 tint = Color(0xFF10B981),
-                                modifier = Modifier.size(12.dp)
+                                modifier = Modifier.size(14.dp)
                             )
-                            Spacer(modifier = Modifier.width(3.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = "UNDO",
                                 style = MaterialTheme.typography.labelSmall.copy(
-                                    fontSize = 9.5.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold
                                 ),
                                 color = Color(0xFF10B981)
@@ -1303,15 +1370,16 @@ private fun BottomCircadianAndQuickDockCard(
                 } else {
                     state.quickPresetDockItems.forEach { preset ->
                         val pColor = Color(preset.substance.colorHex)
-                        val shape = RoundedCornerShape(10.dp)
+                        val shape = RoundedCornerShape(12.dp)
                         Row(
                             modifier = Modifier
                                 .weight(1f)
+                                .fillMaxHeight()
                                 .clip(shape)
-                                .background(pColor.copy(alpha = 0.14f))
-                                .border(0.8.dp, pColor.copy(alpha = 0.45f), shape)
+                                .background(pColor.copy(alpha = 0.16f))
+                                .border(1.dp, pColor.copy(alpha = 0.55f), shape)
                                 .clickable { onQuickLogPreset(preset) }
-                                .padding(horizontal = 6.dp, vertical = 5.dp)
+                                .padding(horizontal = 8.dp)
                                 .testTag("quick_log_${preset.substance.name.lowercase()}"),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.Center
@@ -1320,13 +1388,13 @@ private fun BottomCircadianAndQuickDockCard(
                                 imageVector = Icons.Default.Bolt,
                                 contentDescription = null,
                                 tint = pColor,
-                                modifier = Modifier.size(11.dp)
+                                modifier = Modifier.size(13.dp)
                             )
-                            Spacer(modifier = Modifier.width(3.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = preset.label,
                                 style = MaterialTheme.typography.labelSmall.copy(
-                                    fontSize = 9.5.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold
                                 ),
                                 color = Color.White,
@@ -1339,11 +1407,12 @@ private fun BottomCircadianAndQuickDockCard(
                     // Custom dose button
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(Color.White.copy(alpha = 0.08f))
-                            .border(0.8.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(10.dp))
+                            .fillMaxHeight()
+                            .width(42.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color.White.copy(alpha = 0.10f))
+                            .border(1.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(12.dp))
                             .clickable(onClick = onOpenCustomLogger)
-                            .padding(horizontal = 8.dp, vertical = 5.dp)
                             .testTag("dashboard_open_custom_logger"),
                         contentAlignment = Alignment.Center
                     ) {
@@ -1351,7 +1420,7 @@ private fun BottomCircadianAndQuickDockCard(
                             imageVector = Icons.Default.Add,
                             contentDescription = "Open Dose Studio",
                             tint = Color.White,
-                            modifier = Modifier.size(14.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                 }

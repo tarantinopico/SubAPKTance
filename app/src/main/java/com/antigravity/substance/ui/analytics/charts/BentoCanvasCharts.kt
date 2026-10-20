@@ -68,17 +68,20 @@ import kotlin.math.sin
 fun InspectorPointBanner(
     primaryText: String,
     secondaryText: String,
-    accentColor: Color = Color(0xFF06B6D4),
+    accentColor: Color = Color(0xFF5B4DFF),
     onClear: (() -> Unit)? = null
 ) {
     val glassEnv = LocalSubstanceGlass.current
+    val tooltipBg = if (glassEnv.isLightMode) Color(0xFFF1F5F9) else Color(0xFF181B24)
+    val tooltipBorder = if (glassEnv.isLightMode) Color(0xFFCBD5E1) else Color(0xFF2B3040)
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(accentColor.copy(alpha = if (glassEnv.isLightMode) 0.12f else 0.16f))
-            .border(1.dp, accentColor.copy(alpha = 0.45f), RoundedCornerShape(8.dp))
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            .clip(RoundedCornerShape(12.dp))
+            .background(tooltipBg)
+            .border(1.dp, tooltipBorder, RoundedCornerShape(12.dp))
+            .padding(horizontal = 11.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -86,29 +89,38 @@ fun InspectorPointBanner(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.weight(1f)
         ) {
+            // Hollow-centered circle dot like the reference chart points
             Box(
                 modifier = Modifier
-                    .size(7.dp)
+                    .size(9.dp)
                     .clip(CircleShape)
-                    .background(accentColor)
-            )
-            Spacer(modifier = Modifier.width(6.dp))
+                    .background(accentColor),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(3.5.dp)
+                        .clip(CircleShape)
+                        .background(Color.White)
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = primaryText,
-                style = MaterialTheme.typography.labelSmall.copy(
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold
                 ),
                 color = glassEnv.textPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
         }
-        Spacer(modifier = Modifier.width(6.dp))
+        Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = secondaryText,
-            style = MaterialTheme.typography.labelSmall.copy(
-                fontSize = 10.sp,
+            style = MaterialTheme.typography.labelLarge.copy(
+                fontSize = 10.5.sp,
                 fontWeight = FontWeight.Bold
             ),
             color = accentColor,
@@ -667,11 +679,10 @@ fun DailyUnitConsumptionBarChartCanvas(
                 if (idx == selectedIdx) {
                     val cx = idx * slotW + slotW / 2f
                     drawLine(
-                        color = primaryColor,
+                        color = Color.White.copy(alpha = 0.85f),
                         start = Offset(cx, 0f),
                         end = Offset(cx, h),
-                        strokeWidth = 1.4.dp.toPx(),
-                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 4f))
+                        strokeWidth = 1.4.dp.toPx()
                     )
                 }
 
@@ -682,21 +693,34 @@ fun DailyUnitConsumptionBarChartCanvas(
 
             drawPath(
                 path = maPath,
-                color = if (glassEnv.isLightMode) Color(0xFF0F172A) else Color.White,
-                style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
+                color = primaryColor,
+                style = Stroke(width = 2.2.dp.toPx(), cap = StrokeCap.Round)
             )
+
+            // Draw signature hollow-centered circle points along the curve
+            bars.forEachIndexed { idx, bar ->
+                if (bar.totalUnits > 0.0 || idx == selectedIdx) {
+                    val maX = idx * slotW + slotW / 2f
+                    val maY = (h - (bar.movingAvg7d / maxVal).toFloat() * (h * 0.88f)).coerceIn(4f, h - 4f)
+                    val outerRadius = if (idx == selectedIdx) 5.dp.toPx() else 3.8.dp.toPx()
+                    drawCircle(color = primaryColor, radius = outerRadius, center = Offset(maX, maY))
+                    drawCircle(color = Color.White, radius = outerRadius * 0.42f, center = Offset(maX, maY))
+                }
+            }
 
             // Draw MAX and MIN markers
             if (glassEnv.showChartMinMaxAvgLines) {
                 if (maxIdx in bars.indices && bars[maxIdx].totalUnits > 0.0) {
                     val mx = maxIdx * slotW + slotW / 2f
                     val my = (h - (bars[maxIdx].totalUnits / maxVal).toFloat() * (h * 0.88f)).coerceIn(4f, h - 4f)
-                    drawCircle(color = Color(0xFFEF4444), radius = 4.2.dp.toPx(), center = Offset(mx, my))
+                    drawCircle(color = Color(0xFFEF4444), radius = 4.5.dp.toPx(), center = Offset(mx, my))
+                    drawCircle(color = Color.White, radius = 2.dp.toPx(), center = Offset(mx, my))
                 }
                 if (minActiveIdx in bars.indices && minActiveIdx != maxIdx) {
                     val mnx = minActiveIdx * slotW + slotW / 2f
                     val mny = (h - (bars[minActiveIdx].totalUnits / maxVal).toFloat() * (h * 0.88f)).coerceIn(4f, h - 4f)
-                    drawCircle(color = Color(0xFF10B981), radius = 4.0.dp.toPx(), center = Offset(mnx, mny))
+                    drawCircle(color = Color(0xFF10B981), radius = 4.2.dp.toPx(), center = Offset(mnx, mny))
+                    drawCircle(color = Color.White, radius = 1.8.dp.toPx(), center = Offset(mnx, mny))
                 }
             }
         }
@@ -771,6 +795,17 @@ fun DualContinuousCurveCanvas(
             val maxS = secondaryPoints?.maxOrNull() ?: 0f
             val maxY = max(maxP, maxS).coerceAtLeast(0.1f) * 1.12f
 
+            // Horizontal subtle grid lines
+            val gridCol = if (glassEnv.isLightMode) Color(0xFFCBD5E1) else Color.White.copy(alpha = 0.06f)
+            listOf(0.25f, 0.5f, 0.75f).forEach { frac ->
+                drawLine(
+                    color = gridCol,
+                    start = Offset(0f, h * frac),
+                    end = Offset(w, h * frac),
+                    strokeWidth = 1.dp.toPx()
+                )
+            }
+
             // AVG reference line
             if (glassEnv.showChartMinMaxAvgLines && avgP > 0f) {
                 val avgY = (h - (avgP / maxY) * (h * 0.88f)).coerceIn(3f, h - 3f)
@@ -823,35 +858,36 @@ fun DualContinuousCurveCanvas(
                 drawPath(
                     path = fillPath,
                     brush = Brush.verticalGradient(
-                        listOf(primaryColor.copy(alpha = 0.28f), Color.Transparent)
+                        listOf(primaryColor.copy(alpha = 0.24f), Color.Transparent)
                     )
                 )
             }
             drawPath(
                 path = pPath,
                 color = primaryColor,
-                style = Stroke(width = 2.2.dp.toPx(), cap = StrokeCap.Round)
+                style = Stroke(width = 2.4.dp.toPx(), cap = StrokeCap.Round)
             )
 
             // Peak marker
             if (glassEnv.showChartMinMaxAvgLines && maxIdx in primaryPoints.indices) {
                 val mx = (maxIdx.toFloat() / (primaryPoints.size - 1)) * w
                 val my = (h - (primaryPoints[maxIdx] / maxY) * (h * 0.88f)).coerceIn(4f, h - 4f)
-                drawCircle(color = Color(0xFFEF4444), radius = 3.8.dp.toPx(), center = Offset(mx, my))
+                drawCircle(color = Color(0xFFEF4444), radius = 4.2.dp.toPx(), center = Offset(mx, my))
+                drawCircle(color = Color.White, radius = 1.8.dp.toPx(), center = Offset(mx, my))
             }
 
-            // Selected Crosshair & Point
+            // Selected Crosshair & Hollow-Centered Point matching screenshots
             if (selectedIdx in primaryPoints.indices) {
                 val sx = (selectedIdx.toFloat() / (primaryPoints.size - 1)) * w
-                val sy = (h - (primaryPoints[selectedIdx] / maxY) * (h * 0.88f)).coerceIn(3f, h - 3f)
+                val sy = (h - (primaryPoints[selectedIdx] / maxY) * (h * 0.88f)).coerceIn(4f, h - 4f)
                 drawLine(
-                    color = primaryColor.copy(alpha = 0.75f),
+                    color = Color.White.copy(alpha = 0.85f),
                     start = Offset(sx, 0f),
                     end = Offset(sx, h),
-                    strokeWidth = 1.2.dp.toPx(),
-                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 4f))
+                    strokeWidth = 1.3.dp.toPx()
                 )
-                drawCircle(color = primaryColor, radius = 4.5.dp.toPx(), center = Offset(sx, sy))
+                drawCircle(color = primaryColor, radius = 5.5.dp.toPx(), center = Offset(sx, sy))
+                drawCircle(color = Color.White, radius = 2.3.dp.toPx(), center = Offset(sx, sy))
             }
         }
     }

@@ -169,8 +169,8 @@ fun SubstanceListScreen(
 
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-                verticalArrangement = Arrangement.spacedBy(9.dp)
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(substances, key = { it.id }) { sub ->
                     val subColor = Color(sub.colorHex)
@@ -182,9 +182,10 @@ fun SubstanceListScreen(
                             .fillMaxWidth()
                             .testTag("substance_card_${sub.name.lowercase()}"),
                         accentColor = subColor,
+                        contentPadding = PaddingValues(13.dp),
                         onClick = { editingSubstance = sub }
                     ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically,
@@ -197,35 +198,41 @@ fun SubstanceListScreen(
                                     SquircleIconBadge(
                                         icon = SubstanceIcons.iconForName(sub.iconName),
                                         colorHex = sub.colorHex,
-                                        size = 38.dp,
-                                        iconSize = 20.dp
+                                        size = 42.dp,
+                                        iconSize = 22.dp
                                     )
                                     Spacer(modifier = Modifier.width(10.dp))
                                     Column {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Text(
                                                 text = sub.name,
-                                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                                                style = MaterialTheme.typography.titleLarge.copy(
+                                                    fontSize = 17.sp,
+                                                    fontWeight = FontWeight.Bold
+                                                ),
                                                 color = glassEnv.textPrimary
                                             )
                                             Spacer(modifier = Modifier.width(6.dp))
                                             Text(
                                                 text = "• ${sub.category}",
-                                                style = MaterialTheme.typography.labelSmall,
+                                                style = MaterialTheme.typography.labelSmall.copy(
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.SemiBold
+                                                ),
                                                 color = subColor
                                             )
                                             if (sub.isArchived) {
                                                 Spacer(modifier = Modifier.width(6.dp))
                                                 Text(
                                                     text = "[ARCHIV]",
-                                                    style = MaterialTheme.typography.labelSmall,
+                                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp),
                                                     color = Color(0xFFF59E0B)
                                                 )
                                             }
                                         }
                                         Text(
                                             text = sub.subtitle,
-                                            style = MaterialTheme.typography.bodyMedium,
+                                            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 12.5.sp),
                                             color = glassEnv.textSecondary,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis
@@ -236,58 +243,58 @@ fun SubstanceListScreen(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     IconButton(
                                         onClick = { onSaveSubstance(sub.copy(isFavorite = !sub.isFavorite)) },
-                                        modifier = Modifier.size(30.dp)
+                                        modifier = Modifier.size(34.dp)
                                     ) {
                                         Icon(
                                             imageVector = if (sub.isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
                                             contentDescription = "Favorite",
                                             tint = if (sub.isFavorite) Color(0xFFF59E0B) else glassEnv.textMuted,
-                                            modifier = Modifier.size(17.dp)
+                                            modifier = Modifier.size(19.dp)
                                         )
                                     }
                                     IconButton(
                                         onClick = { onDuplicateSubstance(sub) },
-                                        modifier = Modifier.size(30.dp)
+                                        modifier = Modifier.size(34.dp)
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.ContentCopy,
                                             contentDescription = "Duplicate substance",
                                             tint = Color(0xFF38BDF8),
-                                            modifier = Modifier.size(15.dp)
+                                            modifier = Modifier.size(17.dp)
                                         )
                                     }
                                     IconButton(
                                         onClick = { onSaveSubstance(sub.copy(isArchived = !sub.isArchived)) },
-                                        modifier = Modifier.size(30.dp)
+                                        modifier = Modifier.size(34.dp)
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Archive,
                                             contentDescription = "Archive substance",
                                             tint = if (sub.isArchived) Color(0xFFF59E0B) else glassEnv.textSecondary,
-                                            modifier = Modifier.size(15.dp)
+                                            modifier = Modifier.size(17.dp)
                                         )
                                     }
                                     IconButton(
                                         onClick = { editingSubstance = sub },
-                                        modifier = Modifier.size(30.dp)
+                                        modifier = Modifier.size(34.dp)
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Edit,
                                             contentDescription = "Edit substance",
                                             tint = glassEnv.textPrimary,
-                                            modifier = Modifier.size(15.dp)
+                                            modifier = Modifier.size(17.dp)
                                         )
                                     }
                                     if (substances.size > 1) {
                                         IconButton(
                                             onClick = { onDeleteSubstance(sub.id) },
-                                            modifier = Modifier.size(30.dp)
+                                            modifier = Modifier.size(34.dp)
                                         ) {
                                             Icon(
                                                 imageVector = Icons.Default.Delete,
                                                 contentDescription = "Delete substance",
                                                 tint = Color(0xFFEF4444),
-                                                modifier = Modifier.size(15.dp)
+                                                modifier = Modifier.size(17.dp)
                                             )
                                         }
                                     }
@@ -298,7 +305,10 @@ fun SubstanceListScreen(
                             if (subSubtypes.isNotEmpty()) {
                                 Text(
                                     text = "Druhy (${subSubtypes.size}): ${subSubtypes.joinToString(", ") { "${it.name} (${String.format(Locale.US, "%.2fx", it.potencyMultiplier)})" }}",
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    ),
                                     color = subColor,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
@@ -309,24 +319,34 @@ fun SubstanceListScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(glassEnv.cardBorderBase.copy(alpha = 0.25f))
-                                    .padding(horizontal = 8.dp, vertical = 5.dp),
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(glassEnv.badgeSurface)
+                                    .border(0.8.dp, glassEnv.cardBorderBase, RoundedCornerShape(10.dp))
+                                    .padding(horizontal = 10.dp, vertical = 7.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Text(
                                     text = "Jednotka: ${sub.defaultUnit} (±${settings.formatDose(sub.stepSize)})",
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    ),
                                     color = glassEnv.textPrimary
                                 )
                                 Text(
                                     text = "Cena: ${settings.formatCurrency(sub.costPerUnit)}/${sub.defaultUnit}",
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    ),
                                     color = Color(0xFF10B981)
                                 )
                                 Text(
                                     text = "Max/den: ${settings.formatDose(sub.dailyMaxSafeLimit, sub.defaultUnit)}",
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    ),
                                     color = Color(0xFFF59E0B)
                                 )
                             }
@@ -345,12 +365,15 @@ fun SubstanceListScreen(
                                 }
                                 Text(
                                     text = timingDesc,
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.8.sp),
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp),
                                     color = glassEnv.textSecondary
                                 )
                                 Text(
                                     text = "${subFields.size} vlastních polí",
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.8.sp),
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontSize = 10.5.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    ),
                                     color = subColor
                                 )
                             }

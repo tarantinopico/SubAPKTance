@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -24,18 +25,20 @@ data class UserSettings(
     val decimalPrecision: Int = 1,
     val use24HourFormat: Boolean = true,
     val bedtimeHour24: Int = 23,
-    // Professional Theme, Light Mode & Lightweight Mode
+    // Matte OLED & Indigo Theme, Light Mode, Lightweight Mode & Full Customization
     val isLightMode: Boolean = false,
-    val isLightweightMode: Boolean = false, // 1-tap disable all glows, animations, translucency
+    val isLightweightMode: Boolean = false,
     val showChartMinMaxAvgLines: Boolean = true,
-    val glassOpacity: Float = 0.88f,
-    val specularBorderIntensity: Float = 0.16f,
-    val ambientGlowIntensity: Float = 0.35f,
+    val primaryAccentHex: Long = 0xFF5B4DFFL, // Default: Indigo-Violet (#5B4DFF) matching screenshots
+    val cardCornerRadiusDp: Int = 20, // Default: 20dp rounded cards matching screenshots
+    val glassOpacity: Float = 0.96f, // Default: Matte charcoal card opacity
+    val specularBorderIntensity: Float = 0.08f, // Default: Subtle 1dp dark hairline border (#1E222D)
+    val ambientGlowIntensity: Float = 0.0f, // Default: 0.0f for pure Matte OLED look (can be increased in Settings)
     val glowByStackedActiveLoad: Boolean = true,
-    val darkThemePreset: String = "PROFESSIONAL_SLATE", // PROFESSIONAL_SLATE, PITCH_BLACK_AMOLED, IOS_ABYSSAL_GLASS, CLINICAL_LIGHT
+    val darkThemePreset: String = "OLED_MATTE_INDIGO", // OLED_MATTE_INDIGO, PITCH_BLACK_AMOLED, PROFESSIONAL_SLATE, CLINICAL_LIGHT
     val showCostOnDashboard: Boolean = false,
     val customUnitsCsv: String = "mg,g,mcg,ml,L,IU,pouches,puffs,shots,drinks,pills,drops",
-    val contextTagsCsv: String = "Focus,Work,Gym,Study,Social,Morning,Recovery,Gaming",
+    val contextTagsCsv: String = "práce,relax,spánek,společnost,sport,bolest,focus,stres",
     // Global Computational & Pharmacokinetic Constants (All user-editable!)
     val globalToleranceGainFactor: Double = 16.5,
     val globalToleranceDecayPerDay: Double = 0.18,
@@ -81,6 +84,8 @@ class UserSettingsStore(private val context: Context) {
         val IS_LIGHT_MODE = booleanPreferencesKey("is_light_mode")
         val IS_LIGHTWEIGHT_MODE = booleanPreferencesKey("is_lightweight_mode")
         val SHOW_CHART_MIN_MAX_AVG = booleanPreferencesKey("show_chart_min_max_avg")
+        val PRIMARY_ACCENT_HEX = longPreferencesKey("primary_accent_hex")
+        val CARD_CORNER_RADIUS_DP = intPreferencesKey("card_corner_radius_dp")
         val GLASS_OPACITY = floatPreferencesKey("glass_opacity")
         val SPECULAR_INTENSITY = floatPreferencesKey("specular_intensity")
         val GLOW_INTENSITY = floatPreferencesKey("glow_intensity")
@@ -114,16 +119,18 @@ class UserSettingsStore(private val context: Context) {
             isLightMode = prefs[Keys.IS_LIGHT_MODE] ?: false,
             isLightweightMode = prefs[Keys.IS_LIGHTWEIGHT_MODE] ?: false,
             showChartMinMaxAvgLines = prefs[Keys.SHOW_CHART_MIN_MAX_AVG] ?: true,
-            glassOpacity = prefs[Keys.GLASS_OPACITY] ?: 0.88f,
-            specularBorderIntensity = prefs[Keys.SPECULAR_INTENSITY] ?: 0.16f,
-            ambientGlowIntensity = prefs[Keys.GLOW_INTENSITY] ?: 0.35f,
+            primaryAccentHex = prefs[Keys.PRIMARY_ACCENT_HEX] ?: 0xFF5B4DFFL,
+            cardCornerRadiusDp = prefs[Keys.CARD_CORNER_RADIUS_DP] ?: 20,
+            glassOpacity = prefs[Keys.GLASS_OPACITY] ?: 0.96f,
+            specularBorderIntensity = prefs[Keys.SPECULAR_INTENSITY] ?: 0.08f,
+            ambientGlowIntensity = prefs[Keys.GLOW_INTENSITY] ?: 0.0f,
             glowByStackedActiveLoad = prefs[Keys.GLOW_BY_STACKED] ?: true,
-            darkThemePreset = prefs[Keys.DARK_THEME_PRESET] ?: "PROFESSIONAL_SLATE",
+            darkThemePreset = prefs[Keys.DARK_THEME_PRESET] ?: "OLED_MATTE_INDIGO",
             showCostOnDashboard = prefs[Keys.SHOW_COST_ON_DASH] ?: false,
             customUnitsCsv = prefs[Keys.CUSTOM_UNITS_CSV]
                 ?: "mg,g,mcg,ml,L,IU,pouches,puffs,shots,drinks,pills,drops",
             contextTagsCsv = prefs[Keys.CONTEXT_TAGS_CSV]
-                ?: "Focus,Work,Gym,Study,Social,Morning,Recovery,Gaming",
+                ?: "práce,relax,spánek,společnost,sport,bolest,focus,stres",
             globalToleranceGainFactor = prefs[Keys.GLOBAL_TOL_GAIN] ?: 16.5,
             globalToleranceDecayPerDay = prefs[Keys.GLOBAL_TOL_DECAY] ?: 0.18,
             globalSuperpositionFactor = prefs[Keys.GLOBAL_SUPERPOSITION] ?: 1.0,
@@ -161,7 +168,9 @@ class UserSettingsStore(private val context: Context) {
         themePreset: String? = null,
         isLightMode: Boolean? = null,
         isLightweightMode: Boolean? = null,
-        showChartMinMaxAvgLines: Boolean? = null
+        showChartMinMaxAvgLines: Boolean? = null,
+        primaryAccentHex: Long? = null,
+        cardCornerRadiusDp: Int? = null
     ) {
         context.substanceDataStore.edit { prefs ->
             glassOpacity?.let { prefs[Keys.GLASS_OPACITY] = it.coerceIn(0.40f, 1.0f) }
@@ -172,6 +181,8 @@ class UserSettingsStore(private val context: Context) {
             isLightMode?.let { prefs[Keys.IS_LIGHT_MODE] = it }
             isLightweightMode?.let { prefs[Keys.IS_LIGHTWEIGHT_MODE] = it }
             showChartMinMaxAvgLines?.let { prefs[Keys.SHOW_CHART_MIN_MAX_AVG] = it }
+            primaryAccentHex?.let { prefs[Keys.PRIMARY_ACCENT_HEX] = it }
+            cardCornerRadiusDp?.let { prefs[Keys.CARD_CORNER_RADIUS_DP] = it.coerceIn(10, 32) }
         }
     }
 
@@ -255,7 +266,7 @@ class UserSettingsStore(private val context: Context) {
         if (clean.isBlank()) return
         context.substanceDataStore.edit { prefs ->
             val current = (prefs[Keys.CONTEXT_TAGS_CSV]
-                ?: "Focus,Work,Gym,Study,Social,Morning,Recovery,Gaming")
+                ?: "práce,relax,spánek,společnost,sport,bolest,focus,stres")
                 .split(",").map { it.trim() }.filter { it.isNotEmpty() }.toMutableList()
             if (!current.contains(clean)) {
                 current.add(clean)
@@ -267,7 +278,7 @@ class UserSettingsStore(private val context: Context) {
     suspend fun removeContextTag(tag: String) {
         context.substanceDataStore.edit { prefs ->
             val current = (prefs[Keys.CONTEXT_TAGS_CSV]
-                ?: "Focus,Work,Gym,Study,Social,Morning,Recovery,Gaming")
+                ?: "práce,relax,spánek,společnost,sport,bolest,focus,stres")
                 .split(",").map { it.trim() }.filter { it.isNotEmpty() && it != tag.trim() }
             if (current.isNotEmpty()) {
                 prefs[Keys.CONTEXT_TAGS_CSV] = current.joinToString(",")
